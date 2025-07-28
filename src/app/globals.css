@@ -24,3 +24,114 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Custom Menu Styling */
+.custom-menu .ant-menu-item {
+  border-radius: 8px !important;
+  margin: 4px 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+.custom-menu .ant-menu-submenu {
+  border-radius: 8px !important;
+  margin: 4px 12px !important;
+}
+
+.custom-menu .ant-menu-submenu-title {
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.custom-menu .ant-menu-submenu-title:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.custom-menu .ant-menu-submenu-open > .ant-menu-submenu-title {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #FBBF24 !important;
+}
+
+.custom-menu .ant-menu-sub {
+  background: rgba(0, 0, 0, 0.15) !important;
+  border-radius: 6px !important;
+  margin: 4px 12px 4px 24px !important;
+  padding: 8px 4px !important;
+}
+
+.custom-menu .ant-menu-sub .ant-menu-item {
+  border-radius: 6px !important;
+  margin: 2px 8px !important;
+  padding: 8px 16px !important;
+  background: transparent !important;
+  height: auto !important;
+  line-height: 1.4 !important;
+}
+
+.custom-menu .ant-menu-sub .ant-menu-item:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.custom-menu .ant-menu-sub .ant-menu-item-selected {
+  background: rgba(251, 191, 36, 0.2) !important;
+  color: #FBBF24 !important;
+  font-weight: 500 !important;
+}
+
+.custom-menu .ant-menu-item:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.custom-menu .ant-menu-item-selected {
+  background: rgba(251, 191, 36, 0.15) !important;
+  color: #FBBF24 !important;
+  font-weight: 500 !important;
+}
+
+/* Custom Collapse Button */
+.collapse-button:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.collapse-button:focus {
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+
+.collapse-button:active {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Collapsed Menu Icon Styling */
+.ant-layout-sider-collapsed .custom-menu .ant-menu-item {
+  height: 40px !important;
+  line-height: 40px !important;
+  margin: 4px 8px !important;
+  text-align: center !important;
+}
+
+.ant-layout-sider-collapsed .custom-menu .ant-menu-item .ant-menu-item-icon {
+  font-size: 16px !important;
+  margin-right: 0 !important;
+  margin-inline-end: 0 !important;
+}
+
+.ant-layout-sider-collapsed .custom-menu .ant-menu-submenu {
+  margin: 4px 8px !important;
+}
+
+.ant-layout-sider-collapsed .custom-menu .ant-menu-submenu-title {
+  height: 40px !important;
+  line-height: 40px !important;
+  text-align: center !important;
+}
+
+.ant-layout-sider-collapsed .custom-menu .ant-menu-submenu-title .ant-menu-submenu-arrow {
+  display: none !important;
+}
+
+.ant-layout-sider-collapsed .custom-menu .ant-menu-submenu-title .ant-menu-item-icon {
+  font-size: 16px !important;
+  margin-right: 0 !important;
+  margin-inline-end: 0 !important;
+}
