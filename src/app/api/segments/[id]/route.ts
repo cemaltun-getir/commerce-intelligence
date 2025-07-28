@@ -21,6 +21,36 @@ function getWarehousesByIds(warehouseIds: string[]): Warehouse[] {
   return mockWarehouses.filter(w => warehouseIds.includes(w.id));
 }
 
+// Helper function to check for warehouse conflicts across segments
+async function checkWarehouseConflicts(warehouseIds: string[], excludeSegmentId?: string): Promise<{ hasConflicts: boolean; conflictingWarehouses: string[]; segmentNames: string[] }> {
+  const conflictingWarehouses: string[] = [];
+  const segmentNames: string[] = [];
+  
+  // Find all segments that contain any of the warehouse IDs
+  const query = excludeSegmentId 
+    ? { warehouseIds: { $in: warehouseIds }, _id: { $ne: excludeSegmentId } }
+    : { warehouseIds: { $in: warehouseIds } };
+    
+  const conflictingSegments = await Segment.find(query);
+  
+  for (const segment of conflictingSegments) {
+    for (const warehouseId of warehouseIds) {
+      if (segment.warehouseIds.includes(warehouseId) && !conflictingWarehouses.includes(warehouseId)) {
+        conflictingWarehouses.push(warehouseId);
+        if (!segmentNames.includes(segment.name)) {
+          segmentNames.push(segment.name);
+        }
+      }
+    }
+  }
+  
+  return {
+    hasConflicts: conflictingWarehouses.length > 0,
+    conflictingWarehouses,
+    segmentNames
+  };
+}
+
 // GET /api/segments/[id] - Get single segment
 export async function GET(
   request: NextRequest,
@@ -44,16 +74,17 @@ export async function GET(
     const computedData = calculateSegmentData(warehouses);
     
     // Transform to match frontend interface
-    const transformedSegment = {
+    const response = {
       id: segment._id.toString(),
       name: segment.name,
       warehouseIds: segment.warehouseIds,
+      apiLocation: segment.apiLocation, // No fallback - show actual value or undefined
       warehouses,
       lastUpdated: segment.lastUpdated.toISOString(),
       ...computedData
     };
     
-    return NextResponse.json(transformedSegment);
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Error fetching segment:', error);
     return NextResponse.json(
@@ -73,8 +104,25 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
     
-    // Validate warehouse IDs if provided
+    // Find the segment
+    const segment = await Segment.findById(id);
+    if (!segment) {
+      return NextResponse.json(
+        { error: 'Segment not found' },
+        { status: 404 }
+      );
+    }
+
+    // If updating warehouses, validate and check conflicts
     if (body.warehouseIds) {
+      if (body.warehouseIds.length === 0) {
+        return NextResponse.json(
+          { error: 'At least one warehouse must be selected for the segment' },
+          { status: 400 }
+        );
+      }
+
+      // Validate warehouse IDs
       const warehouses = getWarehousesByIds(body.warehouseIds);
       if (warehouses.length !== body.warehouseIds.length) {
         return NextResponse.json(
@@ -82,40 +130,51 @@ export async function PUT(
           { status: 400 }
         );
       }
+
+      // Check for conflicts (excluding current segment)
+      const conflictCheck = await checkWarehouseConflicts(body.warehouseIds, id);
+      if (conflictCheck.hasConflicts) {
+        const warehouseNames = conflictCheck.conflictingWarehouses
+          .map(whId => warehouses.find(w => w.id === whId)?.name || whId)
+          .join(', ');
+        
+        const segmentNames = conflictCheck.segmentNames.join(', ');
+        
+        return NextResponse.json(
+          { 
+            error: `The following warehouses are already assigned to segment(s) "${segmentNames}": ${warehouseNames}. Each warehouse can only belong to one segment.`,
+            conflictingWarehouses: conflictCheck.conflictingWarehouses,
+            conflictingSegments: conflictCheck.segmentNames
+          },
+          { status: 400 }
+        );
+      }
     }
-    
-    const updatedSegment = await Segment.findByIdAndUpdate(
-      id,
-      {
-        ...(body.name && { name: body.name }),
-        ...(body.warehouseIds && { warehouseIds: body.warehouseIds }),
-        lastUpdated: new Date()
-      },
-      { new: true, runValidators: true }
-    );
-    
-    if (!updatedSegment) {
-      return NextResponse.json(
-        { error: 'Segment not found' },
-        { status: 404 }
-      );
-    }
-    
-    // Get warehouses and calculate computed data
+
+    // Update segment fields
+    if (body.name !== undefined) segment.name = body.name;
+    if (body.warehouseIds !== undefined) segment.warehouseIds = body.warehouseIds;
+    if (body.apiLocation !== undefined) segment.apiLocation = body.apiLocation;
+    segment.lastUpdated = new Date();
+
+    const updatedSegment = await segment.save();
+
+    // Get warehouse data for response
     const warehouses = getWarehousesByIds(updatedSegment.warehouseIds);
     const computedData = calculateSegmentData(warehouses);
-    
-    // Transform to match frontend interface
-    const transformedSegment = {
+
+    const response = {
       id: updatedSegment._id.toString(),
       name: updatedSegment.name,
       warehouseIds: updatedSegment.warehouseIds,
+      apiLocation: updatedSegment.apiLocation,
       warehouses,
       lastUpdated: updatedSegment.lastUpdated.toISOString(),
       ...computedData
     };
-    
-    return NextResponse.json(transformedSegment);
+
+    return NextResponse.json(response);
+
   } catch (error) {
     console.error('Error updating segment:', error);
     return NextResponse.json(

@@ -9,7 +9,8 @@ import {
   BoundaryRule,
   ProductFilter,
   SegmentFilter,
-  Warehouse
+  Warehouse,
+  ApiLocation 
 } from '@/types';
 import { segmentApi } from '@/utils/segmentApi';
 import { warehouseApi } from '@/utils/warehouseApi';
@@ -27,6 +28,9 @@ interface AppState {
   
   // Warehouse data
   warehouses: Warehouse[];
+  
+  // API Location data
+  apiLocations: ApiLocation[];
   
   // Index matrix data
   indexValues: IndexValue[];
@@ -73,6 +77,9 @@ interface AppState {
     demography?: string;
     size?: string;
   }) => Promise<Warehouse[]>;
+  
+  // API Location actions
+  fetchApiLocations: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -87,6 +94,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   productMatches: [],
   segments: [],
   warehouses: [],
+  apiLocations: [],
   indexValues: [],
   boundaryRules: [],
   
@@ -127,6 +135,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (error) {
       console.error('Failed to add segment:', error);
       set({ loading: false });
+      throw error; // Re-throw to allow UI components to handle the error
     }
   },
   
@@ -143,6 +152,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (error) {
       console.error('Failed to update segment:', error);
       set({ loading: false });
+      throw error; // Re-throw to allow UI components to handle the error
     }
   },
   
@@ -254,6 +264,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (error) {
       console.error('Failed to fetch warehouses by filters:', error);
       return [];
+    }
+  },
+
+  // API Location actions
+  fetchApiLocations: async () => {
+    try {
+      set({ loading: true });
+      const apiLocations = await segmentApi.getApiLocations();
+      set({ apiLocations, loading: false });
+    } catch (error) {
+      console.error('Failed to fetch API locations:', error);
+      set({ loading: false });
     }
   },
 })); 

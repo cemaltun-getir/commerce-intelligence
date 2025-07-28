@@ -24,6 +24,16 @@ export interface CompetitorPrice {
   lastUpdated: string;
   matchType: 'Matched' | 'Indirect' | 'None';
   kviLabel: number;
+  apiLocation?: string; // Location where this price was fetched from
+}
+
+// API Location types
+export interface ApiLocation {
+  id: string;
+  name: string;
+  displayName: string;
+  region: string;
+  isActive: boolean;
 }
 
 export interface ProductMatch {
@@ -39,6 +49,7 @@ export interface ProductMatch {
   subCategory: string;
   segmentId?: string; // Which segment this product belongs to
   lastPriceUpdate?: string; // When the calculated price was last updated
+  apiLocation?: string; // Location where this price was fetched from
 }
 
 // Warehouse types
@@ -58,6 +69,7 @@ export interface Segment {
   id: string;
   name: string;
   warehouseIds: string[];
+  apiLocation: string; // Mandatory: Location for fetching competitor prices via API
   warehouses?: Warehouse[]; // Populated warehouse data
   lastUpdated: string;
   // Computed from warehouses

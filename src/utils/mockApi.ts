@@ -6,7 +6,8 @@ import {
   ProductMatch, 
   BoundaryRule,
   ApiResponse,
-  Warehouse
+  Warehouse,
+  ApiLocation
 } from '@/types';
 
 // Mock data
@@ -14,6 +15,66 @@ export const mockCompetitors: Competitor[] = [
   { id: 'migros', name: 'migros', displayName: 'Migros' },
   { id: 'carrefour', name: 'carrefour', displayName: 'Carrefour' },
   { id: 'sok', name: 'sok', displayName: 'ŞOK' },
+];
+
+// Mock API locations where competitor pricing data is available
+export const mockApiLocations: ApiLocation[] = [
+  {
+    id: 'istanbul',
+    name: 'istanbul',
+    displayName: 'Istanbul',
+    region: 'Marmara',
+    isActive: true
+  },
+  {
+    id: 'ankara',
+    name: 'ankara', 
+    displayName: 'Ankara',
+    region: 'Central Anatolia',
+    isActive: true
+  },
+  {
+    id: 'izmir',
+    name: 'izmir',
+    displayName: 'Izmir', 
+    region: 'Aegean',
+    isActive: true
+  },
+  {
+    id: 'antalya',
+    name: 'antalya',
+    displayName: 'Antalya',
+    region: 'Mediterranean', 
+    isActive: true
+  },
+  {
+    id: 'bursa',
+    name: 'bursa',
+    displayName: 'Bursa',
+    region: 'Marmara',
+    isActive: true
+  },
+  {
+    id: 'adana',
+    name: 'adana',
+    displayName: 'Adana',
+    region: 'Mediterranean',
+    isActive: true
+  },
+  {
+    id: 'gaziantep',
+    name: 'gaziantep',
+    displayName: 'Gaziantep',
+    region: 'Southeastern Anatolia',
+    isActive: true
+  },
+  {
+    id: 'konya',
+    name: 'konya',
+    displayName: 'Konya',
+    region: 'Central Anatolia',
+    isActive: false // Example of inactive location
+  }
 ];
 
 export const mockWarehouses: Warehouse[] = [
@@ -139,6 +200,11 @@ export const mockWarehouses: Warehouse[] = [
   }
 ];
 
+// Helper function to get warehouses by IDs
+const getWarehousesByIds = (ids: string[]): Warehouse[] => {
+  return mockWarehouses.filter(warehouse => ids.includes(warehouse.id));
+};
+
 export const mockProducts: Product[] = [
   {
     id: '64e23a1c5d9ef1204abcde1',
@@ -195,6 +261,7 @@ export const mockSegments: Segment[] = [
     id: 'seg1',
     name: 'Istanbul Urban Hub',
     warehouseIds: ['wh_001', 'wh_002'],
+    apiLocation: 'istanbul',
     lastUpdated: '2025-10-05T08:20:00Z',
     domains: ['Getir10'],
     provinces: ['Istanbul'],
@@ -207,6 +274,7 @@ export const mockSegments: Segment[] = [
     id: 'seg2',
     name: 'Ankara Central',
     warehouseIds: ['wh_003'],
+    apiLocation: 'ankara',
     lastUpdated: '2025-10-03T11:45:00Z',
     domains: ['Getir30'],
     provinces: ['Ankara'],
@@ -219,6 +287,7 @@ export const mockSegments: Segment[] = [
     id: 'seg3',
     name: 'Aegean Coast',
     warehouseIds: ['wh_004'],
+    apiLocation: 'izmir',
     lastUpdated: '2025-10-04T16:00:00Z',
     domains: ['Getir10'],
     provinces: ['Izmir'],
@@ -231,6 +300,7 @@ export const mockSegments: Segment[] = [
     id: 'seg4',
     name: 'Mixed Regional Network',
     warehouseIds: ['wh_005', 'wh_008', 'wh_009'],
+    apiLocation: 'bursa',
     lastUpdated: '2025-10-02T09:15:00Z',
     domains: ['Getir30', 'Getir10'],
     provinces: ['Bursa', 'Gaziantep', 'Kocaeli'],
@@ -243,82 +313,89 @@ export const mockSegments: Segment[] = [
 
 export const mockProductMatches: ProductMatch[] = [
   {
+    id: 'match_1',
     getirProductId: '64e23a1c5d9ef1204abcde1',
     getirProductName: 'Soke Un (1 kg)',
-    competitorProductName: 'Soke Un 1kg',
     competitorId: 'sok',
     competitorPrice: 21,
     getirUnitPrice: 23,
-    matchType: 'Matched',
     kviLabel: 95,
     ix: 95,
+    category: 'Basic Foods',
+    subCategory: 'Flour & Grains'
   },
   {
+    id: 'match_2',
     getirProductId: '64e23a1c5d9ef1204abcde1',
     getirProductName: 'Soke Un (1 kg)',
-    competitorProductName: 'Soke Un 1kg',
     competitorId: 'carrefour',
     competitorPrice: 21,
     getirUnitPrice: 23,
-    matchType: 'Matched',
     kviLabel: 95,
     ix: 95,
+    category: 'Basic Foods',
+    subCategory: 'Flour & Grains'
   },
   {
+    id: 'match_3',
     getirProductId: '60b7c4f3af125812i9d3aa4',
     getirProductName: 'Coca Cola 330ml x2',
-    competitorProductName: 'Coca Cola 330ml x2',
     competitorId: 'sok',
     competitorPrice: 110,
     getirUnitPrice: 115,
-    matchType: 'Indirect',
     kviLabel: 95,
     ix: 95,
+    category: 'Beverages',
+    subCategory: 'Soft Drinks'
   },
   {
+    id: 'match_4',
     getirProductId: '60b7c4f3af125812i9d3aa4',
     getirProductName: 'Coca Cola 330ml x2',
-    competitorProductName: 'Coca Cola 330ml x2',
     competitorId: 'carrefour',
     competitorPrice: 115,
     getirUnitPrice: 115,
-    matchType: 'Indirect',
     kviLabel: 95,
     ix: 95,
+    category: 'Beverages',
+    subCategory: 'Soft Drinks'
   },
   {
+    id: 'match_5',
     getirProductId: '62a7d6e4f2c34c1a80ea4f50',
     getirProductName: 'Tamek Domates Salçası',
-    competitorProductName: '-',
     competitorId: 'carrefour',
     competitorPrice: 0,
     getirUnitPrice: 22,
-    matchType: 'None',
     kviLabel: 90,
     ix: 90,
+    category: 'Basic Foods',
+    subCategory: 'Canned & Jarred'
   },
   {
+    id: 'match_6',
     getirProductId: '5ebc1a09293ed4107f56bd90',
     getirProductName: 'Sütaş Beyaz Peynir',
-    competitorProductName: 'Sütaş Beyaz Peynir',
     competitorId: 'sok',
     competitorPrice: 40,
     getirUnitPrice: 44,
-    matchType: 'Matched',
     kviLabel: 90,
     ix: 90,
+    category: 'Dairy',
+    subCategory: 'Cheese'
   },
   {
+    id: 'match_7',
     getirProductId: '5ebc1a09293ed4107f56bd90',
     getirProductName: 'Sütaş Beyaz Peynir',
-    competitorProductName: 'Sütaş Beyaz Peynir',
     competitorId: 'carrefour',
     competitorPrice: 42,
     getirUnitPrice: 44,
-    matchType: 'Matched',
     kviLabel: 90,
     ix: 90,
-  },
+    category: 'Dairy',
+    subCategory: 'Cheese'
+  }
 ];
 
 // Simulated API delay
@@ -326,49 +403,64 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Mock API functions
 export const mockApi = {
-  // Products
-  async getProducts(): Promise<ApiResponse<Product[]>> {
-    await delay(500);
-    return {
-      data: mockProducts,
-      success: true,
-      total: mockProducts.length,
-    };
-  },
-
-  async getProductMatches(competitorId?: string): Promise<ApiResponse<ProductMatch[]>> {
-    await delay(500);
-    let filteredMatches = mockProductMatches;
+  // Get all segments with populated warehouse data  
+  async getSegments(): Promise<Segment[]> {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    if (competitorId && competitorId !== 'all') {
-      filteredMatches = mockProductMatches.filter(match => match.competitorId === competitorId);
-    }
+    return mockSegments.map(segment => ({
+      ...segment,
+      warehouses: getWarehousesByIds(segment.warehouseIds)
+    }));
+  },
 
+  // Get single segment by ID
+  async getSegmentById(id: string): Promise<Segment | null> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const segment = mockSegments.find(s => s.id === id);
+    if (!segment) return null;
+    
     return {
-      data: filteredMatches,
-      success: true,
-      total: filteredMatches.length,
+      ...segment,
+      warehouses: getWarehousesByIds(segment.warehouseIds)
     };
   },
 
-  // Competitors
-  async getCompetitors(): Promise<ApiResponse<Competitor[]>> {
-    await delay(300);
-    return {
-      data: mockCompetitors,
-      success: true,
-      total: mockCompetitors.length,
-    };
+  // Get all API locations
+  async getApiLocations(): Promise<ApiLocation[]> {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    return mockApiLocations.filter(location => location.isActive);
   },
 
-  // Segments
-  async getSegments(): Promise<ApiResponse<Segment[]>> {
-    await delay(500);
-    return {
-      data: mockSegments,
-      success: true,
-      total: mockSegments.length,
-    };
+  // Get all warehouses
+  async getWarehouses(): Promise<Warehouse[]> {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    return mockWarehouses;
+  },
+
+  // Get warehouses by IDs
+  async getWarehousesByIds(ids: string[]): Promise<Warehouse[]> {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    return getWarehousesByIds(ids);
+  },
+
+  // Get all competitors
+  async getCompetitors(): Promise<Competitor[]> {
+    await new Promise(resolve => setTimeout(resolve, 150));
+    return mockCompetitors;
+  },
+
+  // Get all products
+  async getProducts(): Promise<Product[]> {
+    await new Promise(resolve => setTimeout(resolve, 400));
+    return mockProducts;
+  },
+
+  // Get product matches
+  async getProductMatches(): Promise<ProductMatch[]> {
+    await new Promise(resolve => setTimeout(resolve, 600));
+    return mockProductMatches;
   },
 
   async createSegment(segment: Omit<Segment, 'id'>): Promise<ApiResponse<Segment>> {

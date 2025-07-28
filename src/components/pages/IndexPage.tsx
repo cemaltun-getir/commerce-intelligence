@@ -76,25 +76,77 @@ const IndexPage: React.FC = () => {
   };
 
   // Calculate Getir Unit Price based on competitor price and index value
-  const calculateGetirPrice = (competitorPrice: number, indexValue: number): number => {
+  // Now location-aware - prices vary by segment's API location
+  const calculateGetirPrice = (competitorPrice: number, indexValue: number, segmentApiLocation?: string): number => {
+    // If no API location, cannot calculate price
+    if (!segmentApiLocation) {
+      return 0; // Will be handled as null in the calling code
+    }
+
+    // Apply location-based pricing adjustment first
+    const locationAdjustedPrice = getLocationBasedPrice(competitorPrice, segmentApiLocation);
+    
+    // Then apply index value calculation
     // Index value represents percentage relative to competitor
     // 100 = same price, 105 = 5% higher, 95 = 5% lower
-    return Number((competitorPrice * (indexValue / 100)).toFixed(2));
+    const basePrice = locationAdjustedPrice * (indexValue / 100);
+    
+    // Get integer and decimal parts
+    const integerPart = Math.floor(basePrice);
+    const decimalPart = basePrice - integerPart;
+    
+    // Apply special rounding logic for Getir prices
+    if (decimalPart === 0) {
+      // Keep whole numbers as is
+      return Number(basePrice.toFixed(2));
+    } else if (decimalPart < 0.5) {
+      // Round to x.5 for decimal values under x.5
+      return integerPart + 0.5;
+    } else {
+      // Round to x.99 for decimal values over x.5 (including 0.5)
+      return integerPart + 0.99;
+    }
+  };
+
+  // Location-based pricing adjustment (same logic as backend)
+  const getLocationBasedPrice = (basePrice: number, location: string): number => {
+    const locationMultipliers: Record<string, number> = {
+      istanbul: 1.0,      // Base price
+      ankara: 0.95,       // 5% lower
+      izmir: 0.98,        // 2% lower  
+      antalya: 1.02,      // 2% higher
+      bursa: 0.97,        // 3% lower
+      adana: 0.93,        // 7% lower
+      gaziantep: 0.90,    // 10% lower
+      konya: 0.92         // 8% lower
+    };
+    
+    const multiplier = locationMultipliers[location] || 1.0;
+    return Math.round(basePrice * multiplier * 100) / 100; // Round to 2 decimals
   };
 
   // Save calculated prices to database
   const saveCalculatedPrices = async () => {
     try {
-      const pricesToSave = filteredProductData.map(product => ({
-        productId: product.id.split('_')[0], // Remove segment suffix from ID
-        segmentId: product.segmentId,
-        competitorId: product.competitorId,
-        competitorPrice: product.competitorPrice,
-        calculatedPrice: product.getirUnitPrice,
-        indexValue: product.ix,
-        salesChannel: activeChannel as 'getir' | 'getirbuyuk',
-        lastUpdated: new Date().toISOString()
-      }));
+      const pricesToSave = filteredProductData
+        .filter(product => {
+          const segment = segments.find(s => s.id === product.segmentId);
+          return segment?.apiLocation && product.competitorPrice && product.calculatedPrice;
+        })
+        .map(product => {
+          const segment = segments.find(s => s.id === product.segmentId)!; // Safe because we filtered above
+          return {
+            productId: product.id.split('_')[0], // Remove segment suffix from ID
+            segmentId: product.segmentId,
+            competitorId: product.competitorId,
+            competitorPrice: product.competitorPrice,
+            calculatedPrice: product.getirUnitPrice,
+            indexValue: product.ix,
+            salesChannel: activeChannel as 'getir' | 'getirbuyuk',
+            apiLocation: segment.apiLocation!, // Safe because we filtered above
+            lastUpdated: new Date().toISOString()
+          };
+        });
 
       // Save to database via API
       await productPriceApi.saveBatch(pricesToSave);
@@ -257,13 +309,22 @@ const IndexPage: React.FC = () => {
         const kviType = getKviTypeFromLabel(baseProduct.kviLabel);
         const ix = getIndexValue(segment.id, kviType, baseProduct.competitorId, activeChannel);
         
-        // Calculate Getir Unit Price based on competitor price and index value
-        // Only calculate if IX value exists (not null for new segments)
-        const calculatedGetirPrice = ix !== null ? calculateGetirPrice(baseProduct.competitorPrice, ix) : null;
+        // Apply location-based adjustment to competitor price for this segment
+        // If no apiLocation is set, don't show any price
+        const locationAdjustedCompetitorPrice = segment.apiLocation 
+          ? getLocationBasedPrice(baseProduct.competitorPrice, segment.apiLocation)
+          : null;
+        
+        // Calculate Getir Unit Price based on location-adjusted competitor price and index value
+        // Only calculate if IX value exists (not null for new segments) AND segment has apiLocation
+        const calculatedGetirPrice = (ix !== null && segment.apiLocation) 
+          ? calculateGetirPrice(baseProduct.competitorPrice, ix, segment.apiLocation) 
+          : null;
         
         expandedProductData.push({
           key: keyCounter.toString(),
           ...baseProduct,
+          competitorPrice: locationAdjustedCompetitorPrice, // Use location-adjusted price for display
           id: `${baseProduct.id}_${segment.id}`, // Unique ID per segment
           competitor: getCompetitorDisplayName(baseProduct.competitorId),
           kviType,
@@ -271,6 +332,9 @@ const IndexPage: React.FC = () => {
           getirUnitPrice: calculatedGetirPrice,
           segmentId: segment.id,
           segmentName: segment.name || `Segment #${segmentIndex + 1}`,
+          // Add metadata for better error messaging
+          hasApiLocation: !!segment.apiLocation,
+          hasIndexValue: ix !== null,
         });
         keyCounter++;
       });
@@ -498,14 +562,37 @@ const IndexPage: React.FC = () => {
       key: 'getirUnitPrice',
       width: 140,
       align: 'center' as const,
-      render: (price: number) => (
-        <div style={{ color: '#1890ff', fontWeight: 'bold' }}>
-          ₺{price?.toFixed(2)}
-          <div style={{ fontSize: '10px', color: '#666', fontWeight: 'normal' }}>
-            (Calculated)
+      render: (price: number, record: any) => {
+        if (price === null || price === undefined) {
+          if (!record.hasApiLocation && !record.hasIndexValue) {
+            return (
+              <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
+                No location & index set
+              </div>
+            );
+          } else if (!record.hasApiLocation) {
+            return (
+              <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
+                No API location set
+              </div>
+            );
+          } else if (!record.hasIndexValue) {
+            return (
+              <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
+                No index value set
+              </div>
+            );
+          }
+        }
+        return (
+          <div style={{ color: '#1890ff', fontWeight: 'bold' }}>
+            ₺{price.toFixed(2)}
+            <div style={{ fontSize: '10px', color: '#666', fontWeight: 'normal' }}>
+              (Calculated)
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: 'Competitor Price',
@@ -513,14 +600,23 @@ const IndexPage: React.FC = () => {
       key: 'competitorPrice',
       width: 140,
       align: 'center' as const,
-      render: (price: number) => (
-        <div style={{ color: '#666' }}>
-          ₺{price?.toFixed(2)}
-          <div style={{ fontSize: '10px', color: '#999' }}>
-            (From API)
+      render: (price: number, record: any) => {
+        if (price === null || price === undefined) {
+          return (
+            <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
+              No API location set
+            </div>
+          );
+        }
+        return (
+          <div style={{ color: '#666' }}>
+            ₺{price.toFixed(2)}
+            <div style={{ fontSize: '10px', color: '#999' }}>
+              (From API)
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
   ];
 

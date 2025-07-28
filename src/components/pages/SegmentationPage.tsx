@@ -34,7 +34,7 @@ import {
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
-import { Segment, Warehouse } from '@/types';
+import { Segment, Warehouse, ApiLocation } from '@/types';
 
 const { Option } = Select;
 const { Title, Text } = Typography;
@@ -53,9 +53,11 @@ const SegmentationPage: React.FC = () => {
   const {
     segments,
     warehouses,
+    apiLocations,
     loading,
     fetchSegments,
     fetchWarehouses,
+    fetchApiLocations,
     addSegment,
     updateSegment,
     deleteSegment,
@@ -90,7 +92,8 @@ const SegmentationPage: React.FC = () => {
   useEffect(() => {
     fetchSegments();
     fetchWarehouses();
-  }, [fetchSegments, fetchWarehouses]);
+    fetchApiLocations();
+  }, [fetchSegments, fetchWarehouses, fetchApiLocations]);
 
   // Initialize filtered data when segments load
   useEffect(() => {
@@ -217,6 +220,32 @@ const SegmentationPage: React.FC = () => {
       sorter: (a: any, b: any) => (a.warehouseIds?.length || 0) - (b.warehouseIds?.length || 0),
     },
     {
+      title: 'API Location',
+      dataIndex: 'apiLocation',
+      key: 'apiLocation',
+      align: 'center' as const,
+      render: (apiLocation: string) => {
+        if (!apiLocation) {
+          return (
+            <Tag color="red" style={{ fontSize: '11px' }}>
+              ⚠️ Not Set
+            </Tag>
+          );
+        }
+        const location = apiLocations.find(loc => loc.id === apiLocation);
+        return (
+          <Tag color="blue" style={{ fontSize: '11px' }}>
+            {location?.displayName || apiLocation}
+          </Tag>
+        );
+      },
+      sorter: (a: any, b: any) => {
+        const aLoc = a.apiLocation || '';
+        const bLoc = b.apiLocation || '';
+        return aLoc.localeCompare(bLoc);
+      },
+    },
+    {
       title: 'Last Updated',
       dataIndex: 'lastUpdated',
       key: 'lastUpdated',
@@ -286,16 +315,31 @@ const SegmentationPage: React.FC = () => {
   const handleModalOk = async () => {
     try {
       const values = await form.validateFields();
+      
+      // Validate that at least one warehouse is selected
+      if (selectedWarehouses.length === 0) {
+        message.error('Please select at least one warehouse for the segment');
+        return;
+      }
+      
+      // Validate API location is selected
+      if (!values.apiLocation) {
+        message.error('Please select an API location for the segment');
+        return;
+      }
+
       await addSegment({
         name: values.name,
-        warehouseIds: selectedWarehouses
+        warehouseIds: selectedWarehouses,
+        apiLocation: values.apiLocation
       });
       message.success('Segment added successfully');
       setIsModalVisible(false);
       setSelectedWarehouses([]);
       form.resetFields();
     } catch (error) {
-      message.error('Failed to add segment');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add segment';
+      message.error(errorMessage);
     }
   };
 
@@ -597,6 +641,21 @@ const SegmentationPage: React.FC = () => {
             rules={[{ required: true, message: 'Please enter segment name' }]}
           >
             <Input placeholder="Enter segment name" />
+          </Form.Item>
+
+          <Form.Item
+            name="apiLocation"
+            label="API Location"
+            rules={[{ required: true, message: 'Please select an API location' }]}
+            tooltip="Select the location where competitor prices will be fetched from"
+          >
+            <Select placeholder="Select API location for pricing data">
+              {apiLocations.map(location => (
+                <Option key={location.id} value={location.id}>
+                  {location.displayName} ({location.region})
+                </Option>
+              ))}
+            </Select>
           </Form.Item>
           
           <Divider>Warehouse Selection</Divider>

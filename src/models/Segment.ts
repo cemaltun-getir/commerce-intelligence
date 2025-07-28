@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface ISegment extends Document {
   name: string;
   warehouseIds: string[];
+  apiLocation: string;
   lastUpdated: Date;
 }
 
@@ -16,6 +17,11 @@ const SegmentSchema: Schema = new Schema({
     type: String,
     required: true
   }],
+  apiLocation: {
+    type: String,
+    required: true,
+    trim: true
+  },
   lastUpdated: {
     type: Date,
     default: Date.now
@@ -24,4 +30,9 @@ const SegmentSchema: Schema = new Schema({
   timestamps: true
 });
 
-export default mongoose.models.Segment || mongoose.model<ISegment>('Segment', SegmentSchema); 
+// Force recreation of the model to avoid caching issues
+if (mongoose.models.Segment) {
+  delete mongoose.models.Segment;
+}
+
+export default mongoose.model<ISegment>('Segment', SegmentSchema); 

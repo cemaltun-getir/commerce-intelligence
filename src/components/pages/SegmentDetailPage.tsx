@@ -24,7 +24,7 @@ import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { segmentApi } from '@/utils/segmentApi';
 import { useAppStore } from '@/store/useAppStore';
-import { Segment, Warehouse } from '@/types';
+import { Segment, Warehouse, ApiLocation } from '@/types';
 
 interface TransferItem {
   key: string;
@@ -43,7 +43,14 @@ interface SegmentDetailPageProps {
 const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
   const { message } = App.useApp();
   const router = useRouter();
-  const { updateSegment, deleteSegment, warehouses, fetchWarehouses } = useAppStore();
+  const { 
+    updateSegment, 
+    deleteSegment, 
+    warehouses, 
+    apiLocations,
+    fetchWarehouses,
+    fetchApiLocations
+  } = useAppStore();
   
   const [segment, setSegment] = useState<Segment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,8 +85,9 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
     if (segmentId) {
       fetchSegment();
       fetchWarehouses();
+      fetchApiLocations();
     }
-  }, [segmentId, message, fetchWarehouses]);
+  }, [segmentId, message, fetchWarehouses, fetchApiLocations]);
 
   // Warehouse selection handlers
   const handleWarehouseSelection = (targetKeys: React.Key[]) => {
@@ -158,7 +166,8 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
   const handleEdit = () => {
     if (segment) {
       form.setFieldsValue({
-        name: segment.name
+        name: segment.name,
+        apiLocation: segment.apiLocation
       });
       setSelectedWarehouses(segment.warehouseIds || []);
       setIsEditModalVisible(true);
@@ -174,9 +183,17 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
   const handleEditSubmit = async () => {
     try {
       const values = await form.validateFields();
+      
+      // Validate that at least one warehouse is selected
+      if (selectedWarehouses.length === 0) {
+        message.error('Please select at least one warehouse for the segment');
+        return;
+      }
+      
       await updateSegment(segmentId, {
         name: values.name,
-        warehouseIds: selectedWarehouses
+        warehouseIds: selectedWarehouses,
+        apiLocation: values.apiLocation
       });
       
       // Refresh segment data to get updated computed fields
@@ -186,7 +203,8 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
       setIsEditModalVisible(false);
       form.resetFields();
     } catch (error) {
-      message.error('Failed to update segment');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update segment';
+      message.error(errorMessage);
     }
   };
 
@@ -299,6 +317,14 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
           <Descriptions.Item label="Warehouse Count">
             <Text strong>{segment.warehouseIds?.length?.toLocaleString() || '0'}</Text>
           </Descriptions.Item>
+          <Descriptions.Item label="API Location" span={2}>
+            <Text strong>
+              {(() => {
+                const location = apiLocations.find(loc => loc.id === segment.apiLocation);
+                return location ? `${location.displayName} (${location.region})` : segment.apiLocation;
+              })()}
+            </Text>
+          </Descriptions.Item>
           <Descriptions.Item label="Last Updated" span={2}>
             {format(new Date(segment.lastUpdated), 'dd/MM/yyyy HH:mm')}
           </Descriptions.Item>
@@ -386,6 +412,21 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
             rules={[{ required: true, message: 'Please enter segment name' }]}
           >
             <Input placeholder="Enter segment name" />
+          </Form.Item>
+
+          <Form.Item
+            name="apiLocation"
+            label="API Location"
+            rules={[{ required: true, message: 'Please select an API location' }]}
+            tooltip="Select the location where competitor prices will be fetched from"
+          >
+            <Select placeholder="Select API location for pricing data">
+              {apiLocations.map(location => (
+                <Option key={location.id} value={location.id}>
+                  {location.displayName} ({location.region})
+                </Option>
+              ))}
+            </Select>
           </Form.Item>
           
           <Divider>Warehouse Selection</Divider>
