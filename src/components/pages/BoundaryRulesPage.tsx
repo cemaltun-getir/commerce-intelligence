@@ -19,6 +19,7 @@ import {
 } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { BoundaryRule } from '@/types';
+import ClientOnlyTable from '../common/ClientOnlyTable';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -331,7 +332,7 @@ const BoundaryRulesPage: React.FC = () => {
       </Row>
 
       {/* Table */}
-      <Table
+      <ClientOnlyTable
         dataSource={rules}
         columns={columns}
         pagination={{

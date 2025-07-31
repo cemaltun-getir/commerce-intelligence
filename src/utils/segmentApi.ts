@@ -1,5 +1,4 @@
-import { Segment, ApiLocation } from '@/types';
-import { mockApi } from '@/utils/mockApi';
+import { Segment, PriceLocation } from '@/types';
 
 const API_BASE = '/api/segments';
 
@@ -24,9 +23,9 @@ export const segmentApi = {
 
   // Create new segment (now requires apiLocation)
   async create(segment: Omit<Segment, 'id' | 'lastUpdated'>): Promise<Segment> {
-    // Validate that apiLocation is provided
-    if (!segment.apiLocation) {
-      throw new Error('API location is required for segment creation');
+    // Validate that priceLocation is provided
+    if (!segment.priceLocation) {
+      throw new Error('Price location is required for segment creation');
     }
 
     const response = await fetch(API_BASE, {
@@ -69,9 +68,19 @@ export const segmentApi = {
     }
   },
 
-  // Get available API locations
-  async getApiLocations(): Promise<ApiLocation[]> {
-    // Using mock API for now - in real implementation this could be a separate API endpoint
-    return mockApi.getApiLocations();
+  // Get available price locations from external API
+  async getPriceLocations(): Promise<PriceLocation[]> {
+    try {
+      const response = await fetch('http://localhost:3001/api/external/price-locations');
+      
+      if (!response.ok) {
+        throw new Error(`External API responded with status: ${response.status}`);
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching price locations from external API:', error);
+      throw new Error('Failed to fetch price locations');
+    }
   }
 }; 

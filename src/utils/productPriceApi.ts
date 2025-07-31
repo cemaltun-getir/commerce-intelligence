@@ -13,23 +13,7 @@ export interface CalculatedPrice {
 }
 
 export const productPriceApi = {
-  // Save calculated prices in batch
-  async saveBatch(prices: CalculatedPrice[]): Promise<CalculatedPrice[]> {
-    const response = await fetch(API_BASE, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ prices }),
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to save calculated prices');
-    }
-    
-    const result = await response.json();
-    return result.data;
-  },
+
 
   // Get calculated prices with filters (now includes location)
   async getCalculatedPrices(filters?: {

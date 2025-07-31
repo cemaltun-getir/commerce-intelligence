@@ -14,13 +14,12 @@ import {
   Tag,
   Dropdown,
   Tooltip,
-  Space,
   App
 } from 'antd';
-import { EditOutlined, ExportOutlined, DownOutlined, CopyOutlined } from '@ant-design/icons';
+import { EditOutlined, ExportOutlined, DownOutlined, CopyOutlined, CheckOutlined, ClearOutlined } from '@ant-design/icons';
 import { exportProductMatches } from '@/utils/exportUtils';
 import { useAppStore } from '@/store/useAppStore';
-import { productPriceApi } from '@/utils/productPriceApi';
+import ClientOnlyTable from '../common/ClientOnlyTable';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -28,7 +27,7 @@ const { useApp } = App;
 
 const IndexPage: React.FC = () => {
   const { message } = useApp();
-  const [activeTab, setActiveTab] = useState('migros');
+  const [activeTab, setActiveTab] = useState('');
   const [activeChannel, setActiveChannel] = useState('getir');
   
   // Filter states
@@ -37,13 +36,26 @@ const IndexPage: React.FC = () => {
   const [selectedSubCategory, setSelectedSubCategory] = useState('all');
   const [selectedCompetitorFilter, setSelectedCompetitorFilter] = useState('all');
   
+  // Discount rates state - store discount rates for each product
+  const [discountRates, setDiscountRates] = useState<Record<string, number>>({});
+  const [applyAllDiscountRate, setApplyAllDiscountRate] = useState<string>('');
+  
   // Connect to store
   const { 
     segments, 
     indexValues,
     competitors,
+    products,
+    competitorPrices,
+    categories,
+    subCategories,
     fetchSegments,
-    fetchIndexValues, 
+    fetchIndexValues,
+    fetchProducts,
+    fetchVendors,
+    fetchCompetitorPrices,
+    fetchCategories,
+    fetchSubCategories,
     updateIndexValue,
     activeSalesChannel,
     setActiveSalesChannel 
@@ -53,16 +65,78 @@ const IndexPage: React.FC = () => {
   useEffect(() => {
     fetchSegments();
     fetchIndexValues();
-  }, [fetchSegments, fetchIndexValues]);
+    fetchProducts();
+    fetchVendors();
+    fetchCompetitorPrices();
+    fetchCategories();
+    fetchSubCategories();
+  }, [fetchSegments, fetchIndexValues, fetchProducts, fetchVendors, fetchCompetitorPrices, fetchCategories, fetchSubCategories]);
 
   // Update local state when store changes
   useEffect(() => {
     setActiveChannel(activeSalesChannel);
   }, [activeSalesChannel]);
 
+  // Set initial activeTab when competitors are loaded
+  useEffect(() => {
+    if (competitors.length > 0 && !activeTab) {
+      setActiveTab(competitors[0].id);
+    }
+  }, [competitors, activeTab]);
+
   const handleChannelChange = (channel: string) => {
     setActiveChannel(channel);
     setActiveSalesChannel(channel as 'getir' | 'getirbuyuk');
+  };
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    // Reset sub-category selection when category changes
+    setSelectedSubCategory('all');
+  };
+
+  // Handle discount rate change
+  const handleDiscountRateChange = (productKey: string, value: string) => {
+    if (value === '' || value === null || value === undefined) {
+      // Remove the discount rate when input is cleared
+      setDiscountRates(prev => {
+        const newRates = { ...prev };
+        delete newRates[productKey];
+        return newRates;
+      });
+    } else {
+      const numericValue = parseFloat(value);
+      if (!isNaN(numericValue)) {
+        setDiscountRates(prev => ({
+          ...prev,
+          [productKey]: numericValue
+        }));
+      }
+    }
+  };
+
+  // Apply discount rate to all currently visible products
+  const handleApplyDiscountToAll = (discountRate: number) => {
+    const newDiscountRates = { ...discountRates };
+    
+    // Apply discount rate to all currently filtered/visible products
+    filteredProductData.forEach(product => {
+      newDiscountRates[product.key] = discountRate;
+    });
+    
+    setDiscountRates(newDiscountRates);
+  };
+
+  // Clear discount rates for all currently visible products
+  const handleClearDiscountToAll = () => {
+    const newDiscountRates = { ...discountRates };
+    
+    // Clear discount rates for all currently filtered/visible products
+    filteredProductData.forEach(product => {
+      delete newDiscountRates[product.key];
+    });
+    
+    setDiscountRates(newDiscountRates);
   };
 
   // Copy product ID to clipboard
@@ -75,30 +149,16 @@ const IndexPage: React.FC = () => {
     }
   };
 
-  // Calculate Getir Unit Price based on competitor price and index value
-  // Now location-aware - prices vary by segment's API location
-  const calculateGetirPrice = (competitorPrice: number, indexValue: number, segmentApiLocation?: string): number => {
-    // If no API location, cannot calculate price
-    if (!segmentApiLocation) {
-      return 0; // Will be handled as null in the calling code
-    }
-
-    // Apply location-based pricing adjustment first
-    const locationAdjustedPrice = getLocationBasedPrice(competitorPrice, segmentApiLocation);
-    
-    // Then apply index value calculation
-    // Index value represents percentage relative to competitor
-    // 100 = same price, 105 = 5% higher, 95 = 5% lower
-    const basePrice = locationAdjustedPrice * (indexValue / 100);
-    
+  // Apply special rounding logic for Getir prices
+  const applyGetirRounding = (price: number): number => {
     // Get integer and decimal parts
-    const integerPart = Math.floor(basePrice);
-    const decimalPart = basePrice - integerPart;
+    const integerPart = Math.floor(price);
+    const decimalPart = price - integerPart;
     
     // Apply special rounding logic for Getir prices
     if (decimalPart === 0) {
       // Keep whole numbers as is
-      return Number(basePrice.toFixed(2));
+      return Number(price.toFixed(2));
     } else if (decimalPart < 0.5) {
       // Round to x.5 for decimal values under x.5
       return integerPart + 0.5;
@@ -106,6 +166,26 @@ const IndexPage: React.FC = () => {
       // Round to x.99 for decimal values over x.5 (including 0.5)
       return integerPart + 0.99;
     }
+  };
+
+  // Calculate Getir Unit Price based on competitor price and index value
+  // Now location-aware - prices vary by segment's price location
+  const calculateGetirPrice = (competitorPrice: number, indexValue: number, segmentPriceLocation?: string): number => {
+    // If no price location, cannot calculate price
+    if (!segmentPriceLocation) {
+      return 0; // Will be handled as null in the calling code
+    }
+
+    // Apply location-based pricing adjustment first
+    const locationAdjustedPrice = getLocationBasedPrice(competitorPrice, segmentPriceLocation);
+    
+    // Then apply index value calculation
+    // Index value represents percentage relative to competitor
+    // 100 = same price, 105 = 5% higher, 95 = 5% lower
+    const basePrice = locationAdjustedPrice * (indexValue / 100);
+    
+    // Apply special rounding logic
+    return applyGetirRounding(basePrice);
   };
 
   // Location-based pricing adjustment (same logic as backend)
@@ -125,43 +205,12 @@ const IndexPage: React.FC = () => {
     return Math.round(basePrice * multiplier * 100) / 100; // Round to 2 decimals
   };
 
-  // Save calculated prices to database
-  const saveCalculatedPrices = async () => {
-    try {
-      const pricesToSave = filteredProductData
-        .filter(product => {
-          const segment = segments.find(s => s.id === product.segmentId);
-          return segment?.apiLocation && product.competitorPrice && product.calculatedPrice;
-        })
-        .map(product => {
-          const segment = segments.find(s => s.id === product.segmentId)!; // Safe because we filtered above
-          return {
-            productId: product.id.split('_')[0], // Remove segment suffix from ID
-            segmentId: product.segmentId,
-            competitorId: product.competitorId,
-            competitorPrice: product.competitorPrice,
-            calculatedPrice: product.getirUnitPrice,
-            indexValue: product.ix,
-            salesChannel: activeChannel as 'getir' | 'getirbuyuk',
-            apiLocation: segment.apiLocation!, // Safe because we filtered above
-            lastUpdated: new Date().toISOString()
-          };
-        });
 
-      // Save to database via API
-      await productPriceApi.saveBatch(pricesToSave);
-      
-      message.success(`Successfully saved ${pricesToSave.length} calculated prices to database`);
-    } catch (error) {
-      message.error('Failed to save calculated prices to database');
-      console.error('Error saving prices:', error);
-    }
-  };
 
   // Get competitor display name by ID
   const getCompetitorDisplayName = useCallback((competitorId: string): string => {
     const competitor = competitors.find(c => c.id === competitorId);
-    return competitor?.displayName || competitorId;
+    return competitor?.name || competitorId;
   }, [competitors]);
 
   // Create dynamic index data from segments and indexValues
@@ -243,82 +292,50 @@ const IndexPage: React.FC = () => {
 
   // Create dynamic product data with calculated IX values
   const createProductData = useCallback(() => {
-    const baseProductData = [
-      {
-        id: 'prd_64e23a1c5d9ef1204abcde1',
-        getirProductName: 'Soke Un 1kg',
-        competitorId: 'sok',
-        kviLabel: 96, // SKVI level - same for all competitors
-        competitorPrice: 21, // From API
-        category: 'Bakery',
-        subCategory: 'Flour',
-      },
-      {
-        id: 'prd_64e23a1c5d9ef1204abcde2',
-        getirProductName: 'Soke Un 1kg',
-        competitorId: 'carrefour',
-        kviLabel: 96, // SKVI level - same as above (internal Getir classification)
-        competitorPrice: 22.5, // Different competitor price
-        category: 'Bakery',
-        subCategory: 'Flour',
-      },
-      {
-        id: 'prd_60b7c4f3af125812i9d3aa4',
-        getirProductName: 'Coca Cola 330ml x2',
-        competitorId: 'sok',
-        kviLabel: 92, // KVI level
-        competitorPrice: 110, // From API
-        category: 'Beverages',
-        subCategory: 'Soft Drinks',
-      },
-      {
-        id: 'prd_71c8d5e4bf236923j0e4bb5',
-        getirProductName: 'Basic Bread 500g',
-        competitorId: 'migros',
-        kviLabel: 30, // Background level
-        competitorPrice: 4.5, // From API
-        category: 'Bakery',
-        subCategory: 'Bread',
-      },
-      {
-        id: 'prd_82d9e6f5cg347034k1f5cc6',
-        getirProductName: 'Milk 1L',
-        competitorId: 'carrefour',
-        kviLabel: 88, // Foreground level
-        competitorPrice: 11.9, // From API
-        category: 'Dairy',
-        subCategory: 'Milk',
-      },
-      {
-        id: 'prd_93e0f7g6dh458145l2g6dd7',
-        getirProductName: 'Pasta 500g',
-        competitorId: 'migros',
-        kviLabel: 45, // Background level
-        competitorPrice: 8.0, // From API
-        category: 'Pantry',
-        subCategory: 'Pasta',
-      },
-    ];
-
     // Generate products for each segment-competitor combination
     const expandedProductData: any[] = [];
     let keyCounter = 1;
 
-    baseProductData.forEach(baseProduct => {
-      segments.forEach((segment, segmentIndex) => {
+    segments.forEach((segment, segmentIndex) => {
+      // Filter price mappings to only include those that match this segment's price location
+      const segmentPriceMappings = competitorPrices.filter(priceMapping => 
+        priceMapping.location_id === segment.priceLocation
+      );
+
+      segmentPriceMappings.forEach(priceMapping => {
+        const product = products.find(p => p.id === priceMapping.sku_id);
+        const competitor = competitors.find(c => c.id === priceMapping.vendor_id);
+        
+        const baseProduct = {
+          id: priceMapping.sku_id,
+          getirProductName: priceMapping.sku_name,
+          competitorId: priceMapping.vendor_id,
+          kviLabel: product?.kvi_label === 'SKVI' ? 95 : 
+                    product?.kvi_label === 'KVI' ? 90 : 
+                    product?.kvi_label === 'Foreground' ? 70 : 30, // Convert string to number
+          competitorPrice: priceMapping.price, // Use price from price mapping
+          category: product?.category_name || 'Unknown',
+          subCategory: product?.sub_category_name || 'Unknown',
+          brand: priceMapping.brand,
+          unit: priceMapping.unit,
+          unit_value: priceMapping.unit_value,
+          location_id: priceMapping.location_id,
+          location_name: priceMapping.location_name,
+        };
+
         const kviType = getKviTypeFromLabel(baseProduct.kviLabel);
         const ix = getIndexValue(segment.id, kviType, baseProduct.competitorId, activeChannel);
         
         // Apply location-based adjustment to competitor price for this segment
-        // If no apiLocation is set, don't show any price
-        const locationAdjustedCompetitorPrice = segment.apiLocation 
-          ? getLocationBasedPrice(baseProduct.competitorPrice, segment.apiLocation)
+        // If no priceLocation is set, don't show any price
+        const locationAdjustedCompetitorPrice = segment.priceLocation 
+          ? getLocationBasedPrice(baseProduct.competitorPrice, segment.priceLocation)
           : null;
         
         // Calculate Getir Unit Price based on location-adjusted competitor price and index value
-        // Only calculate if IX value exists (not null for new segments) AND segment has apiLocation
-        const calculatedGetirPrice = (ix !== null && segment.apiLocation) 
-          ? calculateGetirPrice(baseProduct.competitorPrice, ix, segment.apiLocation) 
+        // Only calculate if IX value exists (not null for new segments) AND segment has priceLocation
+        const calculatedGetirPrice = (ix !== null && segment.priceLocation) 
+          ? calculateGetirPrice(baseProduct.competitorPrice, ix, segment.priceLocation) 
           : null;
         
         expandedProductData.push({
@@ -333,7 +350,7 @@ const IndexPage: React.FC = () => {
           segmentId: segment.id,
           segmentName: segment.name || `Segment #${segmentIndex + 1}`,
           // Add metadata for better error messaging
-          hasApiLocation: !!segment.apiLocation,
+          hasApiLocation: !!segment.priceLocation,
           hasIndexValue: ix !== null,
         });
         keyCounter++;
@@ -341,7 +358,7 @@ const IndexPage: React.FC = () => {
     });
 
     return expandedProductData;
-  }, [segments, getKviTypeFromLabel, getIndexValue, activeChannel, getCompetitorDisplayName, calculateGetirPrice]);
+  }, [segments, getKviTypeFromLabel, getIndexValue, activeChannel, getCompetitorDisplayName, calculateGetirPrice, competitorPrices, products, competitors]);
 
   // Make product data reactive to index values, segments, and active competitor/channel
   const productData = useMemo(() => {
@@ -387,13 +404,13 @@ const IndexPage: React.FC = () => {
       );
       
       if (exportAll) {
-    exportProductMatches(productData, format);
+        exportProductMatches(productData, format, discountRates);
       } else {
-        exportProductMatches(filteredProductData, format);
+        exportProductMatches(filteredProductData, format, discountRates);
       }
     } else {
       // No filters applied, export all
-      exportProductMatches(filteredProductData, format);
+      exportProductMatches(filteredProductData, format, discountRates);
     }
   };
 
@@ -422,21 +439,11 @@ const IndexPage: React.FC = () => {
     },
   ];
 
-  // Competitor tabs items  
-  const competitorItems = [
-    {
-      key: 'migros',
-      label: 'Migros',
-    },
-    {
-      key: 'carrefour',
-      label: 'Carrefour', 
-    },
-    {
-      key: 'sok',
-      label: 'ŞOK',
-    },
-  ];
+  // Competitor tabs items - use real data from external API
+  const competitorItems = competitors.map(competitor => ({
+    key: competitor.id,
+    label: competitor.name,
+  }));
 
   // Dynamic index matrix columns
   const createIndexColumns = () => {
@@ -446,6 +453,7 @@ const IndexPage: React.FC = () => {
       dataIndex: 'label',
       key: 'label',
       width: 150,
+      fixed: 'left' as const,
       render: (text: string) => <Text strong>{text}</Text>,
       }
     ];
@@ -457,7 +465,8 @@ const IndexPage: React.FC = () => {
         title: segment.name || `Segment #${index + 1}`,
         dataIndex: segmentKey,
         key: segmentKey,
-      align: 'center' as const,
+        width: 120,
+        align: 'center' as const,
         render: (value: number | string, record: Record<string, string | number>) => {
           const segmentId = record[`${segmentKey}SegmentId`] as string;
           const kviType = record.key === 'skvi' ? 'SKVI' : 
@@ -485,6 +494,27 @@ const IndexPage: React.FC = () => {
 
   const indexColumns = createIndexColumns();
 
+  // Get unique categories from external API
+  const uniqueCategories = useMemo(() => {
+    return categories.map(category => category.name).sort();
+  }, [categories]);
+
+  // Get sub-categories based on selected category
+  const availableSubCategories = useMemo(() => {
+    if (selectedCategory === 'all' || !selectedCategory) {
+      // If no category is selected, show all sub-categories
+      return subCategories.map(subCategory => subCategory.name).sort();
+    }
+    
+    // Find the selected category and get its sub-categories
+    const selectedCategoryData = categories.find(cat => cat.name === selectedCategory);
+    if (selectedCategoryData) {
+      return selectedCategoryData.sub_categories.map(subCat => subCat.name).sort();
+    }
+    
+    return [];
+  }, [categories, subCategories, selectedCategory]);
+
   // Product list columns
   const productColumns = [
     {
@@ -492,6 +522,7 @@ const IndexPage: React.FC = () => {
       dataIndex: 'getirProductName',
       key: 'getirProductName',
       width: 200,
+      fixed: 'left' as const,
       render: (name: string, record: Record<string, string | number>) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span>{name}</span>
@@ -618,6 +649,85 @@ const IndexPage: React.FC = () => {
         );
       },
     },
+    {
+      title: 'Discount Rate (%)',
+      dataIndex: 'discountRate',
+      key: 'discountRate',
+      width: 150,
+      align: 'center' as const,
+      render: (value: any, record: any) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center' }}>
+          <Input
+            value={discountRates[record.key] || ''}
+            placeholder="0"
+            style={{ 
+              textAlign: 'center', 
+              width: '50px',
+              padding: '4px 8px',
+              boxSizing: 'border-box'
+            }}
+            size="small"
+            onChange={(e) => handleDiscountRateChange(record.key, e.target.value)}
+            type="number"
+            min={0}
+            max={100}
+            step={0.1}
+          />
+          <Button
+            size="small"
+            type="primary"
+            icon={<CheckOutlined />}
+            style={{ padding: '0 4px', height: '24px', minWidth: '24px' }}
+            onClick={() => {
+              const currentValue = discountRates[record.key] || 0;
+              handleApplyDiscountToAll(currentValue);
+            }}
+            title="Apply to all visible products"
+          />
+          <Button
+            size="small"
+            type="default"
+            icon={<ClearOutlined />}
+            style={{ padding: '0 4px', height: '24px', minWidth: '24px' }}
+            onClick={handleClearDiscountToAll}
+            title="Clear all visible products"
+          />
+        </div>
+      ),
+    },
+    {
+      title: 'Struck Price',
+      dataIndex: 'struckPrice',
+      key: 'struckPrice',
+      width: 140,
+      align: 'center' as const,
+      render: (value: any, record: any) => {
+        const getirPrice = record.getirUnitPrice;
+        const discountRate = discountRates[record.key] || 0;
+        
+        if (getirPrice === null || getirPrice === undefined) {
+          return (
+            <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
+              No Getir price
+            </div>
+          );
+        }
+        
+        const rawStruckPrice = getirPrice * (1 - discountRate / 100);
+        const struckPrice = applyGetirRounding(rawStruckPrice);
+        
+        return (
+          <div style={{ color: '#52c41a', fontWeight: 'bold' }}>
+            ₺{struckPrice.toFixed(2)}
+            {discountRate > 0 && (
+              <div style={{ fontSize: '10px', color: '#666', fontWeight: 'normal' }}>
+                (-{discountRate}%)
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
   ];
 
   return (
@@ -626,15 +736,6 @@ const IndexPage: React.FC = () => {
       <Row justify="space-between" align="middle" style={{ marginBottom: '24px' }}>
         <Col>
           <Title level={2} style={{ margin: 0 }}>Index</Title>
-        </Col>
-        <Col>
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />}
-            style={{ background: '#7C3AED' }}
-          >
-            Edit
-          </Button>
         </Col>
       </Row>
 
@@ -661,7 +762,7 @@ const IndexPage: React.FC = () => {
         />
 
         {/* Index Matrix */}
-        <Table
+        <ClientOnlyTable
           dataSource={indexData}
           columns={indexColumns}
           pagination={false}
@@ -682,14 +783,6 @@ const IndexPage: React.FC = () => {
             </Text>
           </Col>
           <Col>
-            <Space>
-              <Button 
-                type="default"
-                onClick={saveCalculatedPrices}
-                style={{ marginRight: '8px' }}
-              >
-                Save Calculated Prices
-              </Button>
             <Dropdown 
               menu={{ items: exportMenuItems }} 
               trigger={['click']}
@@ -702,7 +795,6 @@ const IndexPage: React.FC = () => {
                 Export <DownOutlined />
               </Button>
             </Dropdown>
-            </Space>
           </Col>
         </Row>
 
@@ -721,13 +813,14 @@ const IndexPage: React.FC = () => {
               placeholder="Category" 
               style={{ width: '100%' }}
               value={selectedCategory}
-              onChange={setSelectedCategory}
+              onChange={handleCategoryChange}
             >
               <Option value="all">All Categories</Option>
-              <Option value="Beverages">Beverages</Option>
-              <Option value="Bakery">Bakery</Option>
-              <Option value="Dairy">Dairy</Option>
-              <Option value="Pantry">Pantry</Option>
+              {uniqueCategories.map(category => (
+                <Option key={category} value={category}>
+                  {category}
+                </Option>
+              ))}
             </Select>
           </Col>
           <Col span={6}>
@@ -738,13 +831,11 @@ const IndexPage: React.FC = () => {
               onChange={setSelectedSubCategory}
             >
               <Option value="all">All Sub Categories</Option>
-              <Option value="Soft Drinks">Soft Drinks</Option>
-              <Option value="Juices">Juices</Option>
-              <Option value="Flour">Flour</Option>
-              <Option value="Bread">Bread</Option>
-              <Option value="Milk">Milk</Option>
-              <Option value="Cheese">Cheese</Option>
-              <Option value="Pasta">Pasta</Option>
+              {availableSubCategories.map((subCategory: string) => (
+                <Option key={subCategory} value={subCategory}>
+                  {subCategory}
+                </Option>
+              ))}
             </Select>
           </Col>
           <Col span={6}>
@@ -755,15 +846,17 @@ const IndexPage: React.FC = () => {
               onChange={setSelectedCompetitorFilter}
             >
               <Option value="all">All Competitors</Option>
-              <Option value="migros">Migros</Option>
-              <Option value="carrefour">Carrefour</Option>
-              <Option value="sok">ŞOK</Option>
+              {competitors.map(competitor => (
+                <Option key={competitor.id} value={competitor.id}>
+                  {competitor.name}
+                </Option>
+              ))}
             </Select>
           </Col>
         </Row>
 
         {/* Product Table */}
-        <Table
+        <ClientOnlyTable
           dataSource={filteredProductData}
           columns={productColumns}
           pagination={{

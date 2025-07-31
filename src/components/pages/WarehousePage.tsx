@@ -22,6 +22,7 @@ import {
 } from '@ant-design/icons';
 import { useAppStore } from '@/store/useAppStore';
 import { Warehouse } from '@/types';
+import ClientOnlyTable from '../common/ClientOnlyTable';
 
 const { Option } = Select;
 const { Title } = Typography;
@@ -350,7 +351,7 @@ const WarehousePage: React.FC = () => {
       </Card>
 
       {/* Table */}
-      <Table
+      <ClientOnlyTable
         dataSource={filteredWarehouses}
         columns={columns}
         loading={loading}

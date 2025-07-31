@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Segment from '@/models/Segment';
-import { mockWarehouses } from '@/utils/mockApi';
 import { Warehouse } from '@/types';
 
 // Helper function to calculate segment data from warehouses
@@ -16,9 +15,21 @@ function calculateSegmentData(warehouses: Warehouse[]) {
   return { domains, provinces, districts, regions, demographies, sizes };
 }
 
-// Helper function to get warehouses by IDs (using mock data for now)
-function getWarehousesByIds(warehouseIds: string[]): Warehouse[] {
-  return mockWarehouses.filter(w => warehouseIds.includes(w.id));
+// Helper function to get warehouses by IDs from external API
+async function getWarehousesByIds(warehouseIds: string[]): Promise<Warehouse[]> {
+  try {
+    const response = await fetch('http://localhost:3001/api/external/locations');
+    
+    if (!response.ok) {
+      throw new Error(`External API responded with status: ${response.status}`);
+    }
+    
+    const warehouses: Warehouse[] = await response.json();
+    return warehouses.filter(w => warehouseIds.includes(w.id));
+  } catch (error) {
+    console.error('Error fetching warehouses from external API:', error);
+    return [];
+  }
 }
 
 // Helper function to check for warehouse conflicts across segments
@@ -58,20 +69,20 @@ export async function GET() {
     const segments = await Segment.find({}).sort({ lastUpdated: -1 });
     
     // Transform segments to match frontend interface with computed data
-    const transformedSegments = segments.map(segment => {
-      const warehouses = getWarehousesByIds(segment.warehouseIds);
+    const transformedSegments = await Promise.all(segments.map(async (segment) => {
+      const warehouses = await getWarehousesByIds(segment.warehouseIds);
       const computedData = calculateSegmentData(warehouses);
       
       return {
         id: (segment._id as any).toString(),
         name: segment.name,
         warehouseIds: segment.warehouseIds,
-        apiLocation: segment.apiLocation, // No fallback - show actual value or undefined
+        priceLocation: segment.priceLocation, // No fallback - show actual value or undefined
         warehouses,
         lastUpdated: segment.lastUpdated.toISOString(),
         ...computedData
       };
-    });
+    }));
     
     return NextResponse.json(transformedSegments);
   } catch (error) {
@@ -97,16 +108,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate that apiLocation is provided (mandatory)
-    if (!body.apiLocation) {
+    // Validate that priceLocation is provided (mandatory)
+    if (!body.priceLocation) {
       return NextResponse.json(
-        { error: 'API location is required for segment creation' },
+        { error: 'Price location is required for segment creation' },
         { status: 400 }
       );
     }
     
     // Validate warehouse IDs
-    const warehouses = getWarehousesByIds(body.warehouseIds);
+    const warehouses = await getWarehousesByIds(body.warehouseIds);
     if (warehouses.length !== body.warehouseIds.length) {
       return NextResponse.json(
         { error: 'Some warehouse IDs are invalid' },
@@ -138,7 +149,7 @@ export async function POST(request: NextRequest) {
     const segment = new Segment({
       name: body.name,
       warehouseIds: body.warehouseIds || [],
-      apiLocation: body.apiLocation,
+      priceLocation: body.priceLocation,
       lastUpdated: new Date()
     });
     
@@ -151,7 +162,7 @@ export async function POST(request: NextRequest) {
       id: (savedSegment._id as any).toString(),
       name: savedSegment.name,
       warehouseIds: savedSegment.warehouseIds,
-      apiLocation: savedSegment.apiLocation,
+      priceLocation: savedSegment.priceLocation,
       lastUpdated: savedSegment.lastUpdated.toISOString(),
       ...computedData
     };

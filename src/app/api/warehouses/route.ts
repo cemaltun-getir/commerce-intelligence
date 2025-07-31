@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Warehouse from '@/models/Warehouse';
-import { mockWarehouses } from '@/utils/mockApi';
+import { Warehouse as WarehouseType } from '@/types';
 
 // GET /api/warehouses - Get all warehouses with optional filters
 export async function GET(request: NextRequest) {
@@ -13,27 +13,39 @@ export async function GET(request: NextRequest) {
     const demography = searchParams.get('demography');
     const size = searchParams.get('size');
 
-    // For now, use mock data. In production, you would fetch from external API
-    let warehouses = [...mockWarehouses];
+    // Fetch data from external API
+    const response = await fetch('http://localhost:3001/api/external/locations');
+    
+    if (!response.ok) {
+      throw new Error(`External API responded with status: ${response.status}`);
+    }
+    
+    const warehouses: WarehouseType[] = await response.json();
 
     // Apply filters
+    let filteredWarehouses = warehouses;
+    
     if (province) {
-      warehouses = warehouses.filter(w => w.province.toLowerCase().includes(province.toLowerCase()));
+      filteredWarehouses = filteredWarehouses.filter(w => 
+        w.province.toLowerCase().includes(province.toLowerCase())
+      );
     }
     if (district) {
-      warehouses = warehouses.filter(w => w.district.toLowerCase().includes(district.toLowerCase()));
+      filteredWarehouses = filteredWarehouses.filter(w => 
+        w.district.toLowerCase().includes(district.toLowerCase())
+      );
     }
     if (domain) {
-      warehouses = warehouses.filter(w => w.domain === domain);
+      filteredWarehouses = filteredWarehouses.filter(w => w.domain === domain);
     }
     if (demography) {
-      warehouses = warehouses.filter(w => w.demography === demography);
+      filteredWarehouses = filteredWarehouses.filter(w => w.demography === demography);
     }
     if (size) {
-      warehouses = warehouses.filter(w => w.size === size);
+      filteredWarehouses = filteredWarehouses.filter(w => w.size === size);
     }
 
-    return NextResponse.json(warehouses);
+    return NextResponse.json(filteredWarehouses);
   } catch (error) {
     console.error('Error fetching warehouses:', error);
     return NextResponse.json(

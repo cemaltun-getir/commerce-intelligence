@@ -2,38 +2,48 @@
 export interface Product {
   id: string;
   name: string;
-  category: string;
-  subCategory?: string;
-  sku: string;
-  getirUnitPrice: number;
-  recommendedRetailPrice?: number;
+  image?: string;
+  brand: string;
+  unit: string;
+  unit_value: string;
+  category_id: string;
+  category_name: string;
+  sub_category_id: string;
+  sub_category_name: string;
+  kvi_label: string;
+  created_at: string;
 }
 
 export interface Competitor {
   id: string;
   name: string;
-  displayName: string;
   logo?: string;
+  created_at: string;
 }
 
 export interface CompetitorPrice {
   id: string;
-  productId: string;
-  competitorId: string;
+  sku_id: string;
+  vendor_id: string;
+  location_id: string;
   price: number;
-  lastUpdated: string;
-  matchType: 'Matched' | 'Indirect' | 'None';
-  kviLabel: number;
-  apiLocation?: string; // Location where this price was fetched from
+  unit_price: number;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+  sku_name: string;
+  vendor_name: string;
+  location_name: string;
+  brand: string;
+  unit: string;
+  unit_value: string;
 }
 
-// API Location types
-export interface ApiLocation {
+// Price Location types (for competitor pricing data)
+export interface PriceLocation {
   id: string;
   name: string;
-  displayName: string;
-  region: string;
-  isActive: boolean;
+  created_at: string;
 }
 
 export interface ProductMatch {
@@ -59,9 +69,9 @@ export interface Warehouse {
   province: string;
   district: string;
   region: string;
-  demography: 'Urban' | 'Suburban' | 'Rural';
-  size: 'Small' | 'Medium' | 'Large' | 'XLarge';
-  domain: 'Getir10' | 'Getir30';
+  demography: 'Upper Premium' | 'Premium';
+  size: 'Midi' | 'GB Maxi' | 'GB Midi';
+  domain: 'Getir' | 'Getir Büyük';
 }
 
 // Segmentation types
@@ -69,7 +79,7 @@ export interface Segment {
   id: string;
   name: string;
   warehouseIds: string[];
-  apiLocation: string; // Mandatory: Location for fetching competitor prices via API
+  priceLocation: string; // Mandatory: Location for fetching competitor prices via API
   warehouses?: Warehouse[]; // Populated warehouse data
   lastUpdated: string;
   // Computed from warehouses
@@ -126,7 +136,7 @@ export interface ProductFilter {
 
 export interface SegmentFilter {
   search?: string;
-  domain?: 'Getir10' | 'Getir30' | 'all';
+  domain?: 'Getir' | 'Getir Büyük' | 'all';
   province?: string;
   district?: string;
   region?: string;
@@ -141,4 +151,27 @@ export interface ExportOptions {
     from: string;
     to: string;
   };
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  created_at: string;
+  sub_categories_count: number;
+  skus_count: number;
+  sub_categories: {
+    id: string;
+    name: string;
+    created_at: string;
+    skus_count: number;
+  }[];
+}
+
+export interface SubCategory {
+  id: string;
+  name: string;
+  category_id: string;
+  category_name: string;
+  created_at: string;
+  skus_count: number;
 } 

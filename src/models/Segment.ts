@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface ISegment extends Document {
   name: string;
   warehouseIds: string[];
-  apiLocation: string;
+  priceLocation: string;
   lastUpdated: Date;
 }
 
@@ -17,7 +17,7 @@ const SegmentSchema: Schema = new Schema({
     type: String,
     required: true
   }],
-  apiLocation: {
+  priceLocation: {
     type: String,
     required: true,
     trim: true

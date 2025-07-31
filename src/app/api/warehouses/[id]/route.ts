@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Warehouse from '@/models/Warehouse';
-import { mockWarehouses } from '@/utils/mockApi';
+import { Warehouse as WarehouseType } from '@/types';
 
 // GET /api/warehouses/[id] - Get single warehouse
 export async function GET(
@@ -11,8 +11,15 @@ export async function GET(
   try {
     const { id } = await params;
     
-    // For now, use mock data. In production, you would fetch from external API
-    const warehouse = mockWarehouses.find(w => w.id === id);
+    // Fetch data from external API
+    const response = await fetch('http://localhost:3001/api/external/locations');
+    
+    if (!response.ok) {
+      throw new Error(`External API responded with status: ${response.status}`);
+    }
+    
+    const warehouses: WarehouseType[] = await response.json();
+    const warehouse = warehouses.find(w => w.id === id);
     
     if (!warehouse) {
       return NextResponse.json(

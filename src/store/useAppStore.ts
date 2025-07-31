@@ -10,11 +10,14 @@ import {
   ProductFilter,
   SegmentFilter,
   Warehouse,
-  ApiLocation 
+  PriceLocation,
+  Category,
+  SubCategory
 } from '@/types';
 import { segmentApi } from '@/utils/segmentApi';
 import { warehouseApi } from '@/utils/warehouseApi';
 import { indexValueApi } from '@/utils/indexValueApi';
+import { externalApi } from '@/utils/externalApi';
 
 interface AppState {
   // Product data
@@ -23,14 +26,18 @@ interface AppState {
   competitorPrices: CompetitorPrice[];
   productMatches: ProductMatch[];
   
+  // Category data
+  categories: Category[];
+  subCategories: SubCategory[];
+  
   // Segment data
   segments: Segment[];
   
   // Warehouse data
   warehouses: Warehouse[];
   
-  // API Location data
-  apiLocations: ApiLocation[];
+  // Price Location data
+  priceLocations: PriceLocation[];
   
   // Index matrix data
   indexValues: IndexValue[];
@@ -78,23 +85,28 @@ interface AppState {
     size?: string;
   }) => Promise<Warehouse[]>;
   
-  // API Location actions
-  fetchApiLocations: () => Promise<void>;
+  // Price Location actions
+  fetchPriceLocations: () => Promise<void>;
+  
+  // External API actions
+  fetchProducts: () => Promise<void>;
+  fetchVendors: () => Promise<void>;
+  fetchCompetitorPrices: () => Promise<void>;
+  fetchCategories: () => Promise<void>;
+  fetchSubCategories: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
   // Initial state
   products: [],
-  competitors: [
-    { id: 'migros', name: 'migros', displayName: 'Migros' },
-    { id: 'carrefour', name: 'carrefour', displayName: 'Carrefour' },
-    { id: 'sok', name: 'sok', displayName: 'ŞOK' },
-  ],
+  competitors: [],
   competitorPrices: [],
   productMatches: [],
+  categories: [],
+  subCategories: [],
   segments: [],
   warehouses: [],
-  apiLocations: [],
+  priceLocations: [],
   indexValues: [],
   boundaryRules: [],
   
@@ -162,6 +174,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       await segmentApi.delete(id);
       set((state) => ({
         segments: state.segments.filter(segment => segment.id !== id),
+        indexValues: state.indexValues.filter(iv => iv.segmentId !== id),
         loading: false
       }));
     } catch (error) {
@@ -267,14 +280,70 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  // API Location actions
-  fetchApiLocations: async () => {
+  // Price Location actions
+  fetchPriceLocations: async () => {
     try {
       set({ loading: true });
-      const apiLocations = await segmentApi.getApiLocations();
-      set({ apiLocations, loading: false });
+      const priceLocations = await segmentApi.getPriceLocations();
+      set({ priceLocations, loading: false });
     } catch (error) {
-      console.error('Failed to fetch API locations:', error);
+      console.error('Failed to fetch price locations:', error);
+      set({ loading: false });
+    }
+  },
+
+  // External API actions
+  fetchProducts: async () => {
+    try {
+      set({ loading: true });
+      const products = await externalApi.getProducts();
+      set({ products, loading: false });
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+      set({ loading: false });
+    }
+  },
+
+  fetchVendors: async () => {
+    try {
+      set({ loading: true });
+      const competitors = await externalApi.getVendors();
+      set({ competitors, loading: false });
+    } catch (error) {
+      console.error('Failed to fetch vendors:', error);
+      set({ loading: false });
+    }
+  },
+
+  fetchCompetitorPrices: async () => {
+    try {
+      set({ loading: true });
+      const competitorPrices = await externalApi.getPriceMappings();
+      set({ competitorPrices, loading: false });
+    } catch (error) {
+      console.error('Failed to fetch competitor prices:', error);
+      set({ loading: false });
+    }
+  },
+
+  fetchCategories: async () => {
+    try {
+      set({ loading: true });
+      const categories = await externalApi.getCategories();
+      set({ categories, loading: false });
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+      set({ loading: false });
+    }
+  },
+
+  fetchSubCategories: async () => {
+    try {
+      set({ loading: true });
+      const subCategories = await externalApi.getSubCategories();
+      set({ subCategories, loading: false });
+    } catch (error) {
+      console.error('Failed to fetch sub-categories:', error);
       set({ loading: false });
     }
   },

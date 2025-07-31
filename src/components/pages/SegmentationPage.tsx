@@ -1,44 +1,47 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Table,
   Button,
   Space,
-  Tag,
-  Input,
-  Select,
   Modal,
   Form,
+  Input,
+  Transfer,
+  Select,
+  Tag,
   Row,
   Col,
-  Card,
-  Tooltip,
-  Typography,
   Divider,
-  Transfer,
+  Typography,
+  Card,
+  Statistic,
+  Tooltip,
+  Popconfirm,
+  Checkbox,
+  Dropdown,
+  Menu,
   App
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import type { TableRowSelection } from 'antd/es/table/interface';
 import {
   PlusOutlined,
-  SearchOutlined,
-  FilterOutlined,
-  ExportOutlined,
-  EyeOutlined,
-  EditOutlined,
   DeleteOutlined,
+  EyeOutlined,
+  FilterOutlined,
   ReloadOutlined,
+  MoreOutlined,
+  SearchOutlined,
+  ClearOutlined
 } from '@ant-design/icons';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
-import { Segment, Warehouse, ApiLocation } from '@/types';
+import { Segment, Warehouse, PriceLocation } from '@/types';
+import ClientOnlyTable from '../common/ClientOnlyTable';
 
 const { Option } = Select;
 const { Title, Text } = Typography;
-const { Search } = Input;
 
 interface TransferItem {
   key: string;
@@ -53,23 +56,24 @@ const SegmentationPage: React.FC = () => {
   const {
     segments,
     warehouses,
-    apiLocations,
+    priceLocations,
     loading,
     fetchSegments,
     fetchWarehouses,
-    fetchApiLocations,
+    fetchPriceLocations,
     addSegment,
-    updateSegment,
-    deleteSegment,
-    setLoading
+    deleteSegment
   } = useAppStore();
 
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isWarehouseModalVisible, setIsWarehouseModalVisible] = useState(false);
-  const [editingSegment, setEditingSegment] = useState<Segment | null>(null);
-  const [filteredData, setFilteredData] = useState<Segment[]>([]);
-  const [form] = Form.useForm();
+  const [selectedWarehouses, setSelectedWarehouses] = useState<React.Key[]>([]);
+  const [warehouseFilter, setWarehouseFilter] = useState({
+    domain: '',
+    region: '',
+    province: '',
+    size: '',
+    demography: ''
+  });
   const [filters, setFilters] = useState({
     search: '',
     province: '',
@@ -77,36 +81,17 @@ const SegmentationPage: React.FC = () => {
     region: '',
     domain: ''
   });
-
-  // Warehouse selection state
-  const [selectedWarehouses, setSelectedWarehouses] = useState<string[]>([]);
-  const [warehouseFilter, setWarehouseFilter] = useState({
-    domain: '',
-    region: '',
-    province: '',
-    district: '',
-    demography: '',
-    size: ''
-  });
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [form] = Form.useForm();
 
   useEffect(() => {
     fetchSegments();
     fetchWarehouses();
-    fetchApiLocations();
-  }, [fetchSegments, fetchWarehouses, fetchApiLocations]);
+    fetchPriceLocations();
+  }, [fetchSegments, fetchWarehouses, fetchPriceLocations]);
 
   // Initialize filtered data when segments load
-  useEffect(() => {
-    setFilteredData(segments);
-  }, [segments]);
-
-  // Update filtered data when segments change
-  useEffect(() => {
-    applyFilters();
-  }, [segments, filters]);
-
-  // Apply all filters
-  const applyFilters = () => {
+  const filteredData = useMemo(() => {
     let filtered = [...segments];
 
     // Search filter (name, domains, or ID)
@@ -153,8 +138,8 @@ const SegmentationPage: React.FC = () => {
       );
     }
 
-    setFilteredData(filtered);
-  };
+    return filtered;
+  }, [segments, filters]);
 
   // Get unique values for filter options
   const getUniqueValues = (field: 'provinces' | 'districts' | 'regions' | 'domains') => {
@@ -192,7 +177,7 @@ const SegmentationPage: React.FC = () => {
         <Space wrap>
           {domains && domains.length > 0 ? (
             domains.map((domain, index) => (
-              <Tag key={index} color={domain === 'Getir10' ? 'green' : 'blue'}>
+                              <Tag key={index} color={domain === 'Getir' ? 'green' : 'blue'}>
                 {domain}
               </Tag>
             ))
@@ -220,28 +205,28 @@ const SegmentationPage: React.FC = () => {
       sorter: (a: any, b: any) => (a.warehouseIds?.length || 0) - (b.warehouseIds?.length || 0),
     },
     {
-      title: 'API Location',
-      dataIndex: 'apiLocation',
-      key: 'apiLocation',
+      title: 'Price Location',
+      dataIndex: 'priceLocation',
+      key: 'priceLocation',
       align: 'center' as const,
-      render: (apiLocation: string) => {
-        if (!apiLocation) {
+              render: (priceLocation: string) => {
+          if (!priceLocation) {
+            return (
+              <Tag color="red" style={{ fontSize: '11px' }}>
+                ⚠️ Not Set
+              </Tag>
+            );
+          }
+          const location = priceLocations.find(loc => loc.id === priceLocation);
           return (
-            <Tag color="red" style={{ fontSize: '11px' }}>
-              ⚠️ Not Set
+            <Tag color="blue" style={{ fontSize: '11px' }}>
+              {location?.name || priceLocation}
             </Tag>
           );
-        }
-        const location = apiLocations.find(loc => loc.id === apiLocation);
-        return (
-          <Tag color="blue" style={{ fontSize: '11px' }}>
-            {location?.displayName || apiLocation}
-          </Tag>
-        );
-      },
+        },
       sorter: (a: any, b: any) => {
-        const aLoc = a.apiLocation || '';
-        const bLoc = b.apiLocation || '';
+        const aLoc = a.priceLocation || '';
+        const bLoc = b.priceLocation || '';
         return aLoc.localeCompare(bLoc);
       },
     },
@@ -322,16 +307,16 @@ const SegmentationPage: React.FC = () => {
         return;
       }
       
-      // Validate API location is selected
-      if (!values.apiLocation) {
-        message.error('Please select an API location for the segment');
+      // Validate price location is selected
+      if (!values.priceLocation) {
+        message.error('Please select a price location for the segment');
         return;
       }
 
       await addSegment({
         name: values.name,
-        warehouseIds: selectedWarehouses,
-        apiLocation: values.apiLocation
+        warehouseIds: selectedWarehouses as string[],
+        priceLocation: values.priceLocation
       });
       message.success('Segment added successfully');
       setIsModalVisible(false);
@@ -354,8 +339,17 @@ const SegmentationPage: React.FC = () => {
     setSelectedWarehouses(targetKeys as string[]);
   };
 
+  // Get available warehouses (not assigned to any segment)
+  const getAvailableWarehouses = (): Warehouse[] => {
+    const allAssignedWarehouseIds = segments.flatMap(seg => seg.warehouseIds || []);
+    return warehouses.filter(warehouse => 
+      !allAssignedWarehouseIds.includes(warehouse.id)
+    );
+  };
+
   const getWarehouseTransferData = (): TransferItem[] => {
-    return warehouses.map(warehouse => ({
+    const availableWarehouses = getAvailableWarehouses();
+    return availableWarehouses.map(warehouse => ({
       key: warehouse.id,
       title: warehouse.name,
       description: `${warehouse.province}, ${warehouse.district} - ${warehouse.domain}`,
@@ -364,7 +358,8 @@ const SegmentationPage: React.FC = () => {
   };
 
   const renderWarehouseItem = (item: TransferItem) => {
-    const warehouse = warehouses.find(w => w.id === item.key);
+    const availableWarehouses = getAvailableWarehouses();
+    const warehouse = availableWarehouses.find(w => w.id === item.key);
     if (!warehouse) return item.title;
     
     return {
@@ -395,7 +390,7 @@ const SegmentationPage: React.FC = () => {
             flexWrap: 'wrap'
           }}>
             <Tag 
-              color={warehouse.domain === 'Getir10' ? 'blue' : 'green'} 
+                              color={warehouse.domain === 'Getir' ? 'blue' : 'green'} 
               style={{ fontSize: '11px', margin: '0 2px 2px 0' }}
             >
               {warehouse.domain}
@@ -473,10 +468,10 @@ const SegmentationPage: React.FC = () => {
       {/* Filters */}
       <Row gutter={16} style={{ marginBottom: '16px' }}>
         <Col span={6}>
-          <Search
+          <Input
             placeholder="Search by name, domain, or ID"
+            prefix={<SearchOutlined />}
             value={filters.search}
-            onSearch={handleSearch}
             onChange={e => handleSearch(e.target.value)}
             allowClear
           />
@@ -598,7 +593,7 @@ const SegmentationPage: React.FC = () => {
       )}
 
       {/* Table */}
-      <Table
+      <ClientOnlyTable
         dataSource={filteredData}
         columns={columns}
         loading={loading}
@@ -644,15 +639,15 @@ const SegmentationPage: React.FC = () => {
           </Form.Item>
 
           <Form.Item
-            name="apiLocation"
-            label="API Location"
-            rules={[{ required: true, message: 'Please select an API location' }]}
+            name="priceLocation"
+            label="Price Location"
+            rules={[{ required: true, message: 'Please select a price location' }]}
             tooltip="Select the location where competitor prices will be fetched from"
           >
-            <Select placeholder="Select API location for pricing data">
-              {apiLocations.map(location => (
+            <Select placeholder="Select price location for pricing data">
+              {priceLocations.map(location => (
                 <Option key={location.id} value={location.id}>
-                  {location.displayName} ({location.region})
+                  {location.name}
                 </Option>
               ))}
             </Select>
@@ -670,8 +665,8 @@ const SegmentationPage: React.FC = () => {
                   onChange={(value) => setWarehouseFilter(prev => ({ ...prev, domain: value || '' }))}
                   allowClear
                 >
-                  <Option value="Getir10">Getir10</Option>
-                  <Option value="Getir30">Getir30</Option>
+                  <Option value="Getir">Getir</Option>
+                  <Option value="Getir Büyük">Getir Büyük</Option>
                 </Select>
               </Col>
               <Col span={8}>
@@ -682,7 +677,7 @@ const SegmentationPage: React.FC = () => {
                   onChange={(value) => setWarehouseFilter(prev => ({ ...prev, region: value || '' }))}
                   allowClear
                 >
-                  {[...new Set(warehouses.map(w => w.region))].map(region => (
+                  {[...new Set(getAvailableWarehouses().map(w => w.region))].map(region => (
                     <Option key={region} value={region}>{region}</Option>
                   ))}
                 </Select>
@@ -695,7 +690,7 @@ const SegmentationPage: React.FC = () => {
                   onChange={(value) => setWarehouseFilter(prev => ({ ...prev, province: value || '' }))}
                   allowClear
                 >
-                  {[...new Set(warehouses.map(w => w.province))].map(province => (
+                  {[...new Set(getAvailableWarehouses().map(w => w.province))].map(province => (
                     <Option key={province} value={province}>{province}</Option>
                   ))}
                 </Select>
@@ -732,9 +727,10 @@ const SegmentationPage: React.FC = () => {
             </Row>
           </div>
 
-          <Transfer
-            dataSource={getWarehouseTransferData().filter(item => {
-              const warehouse = warehouses.find(w => w.id === item.key);
+          {(() => {
+            const filteredData = getWarehouseTransferData().filter(item => {
+              const availableWarehouses = getAvailableWarehouses();
+              const warehouse = availableWarehouses.find(w => w.id === item.key);
               if (!warehouse) return false;
               
               return (!warehouseFilter.domain || warehouse.domain === warehouseFilter.domain) &&
@@ -742,31 +738,37 @@ const SegmentationPage: React.FC = () => {
                      (!warehouseFilter.province || warehouse.province === warehouseFilter.province) &&
                      (!warehouseFilter.size || warehouse.size === warehouseFilter.size) &&
                      (!warehouseFilter.demography || warehouse.demography === warehouseFilter.demography);
-            })}
-            targetKeys={selectedWarehouses}
-            onChange={handleWarehouseSelection}
-            render={renderWarehouseItem}
-            titles={[
-              <span key="available" style={{ fontWeight: 600, fontSize: '14px' }}>
-                📦 Available Warehouses ({warehouses.length})
-              </span>, 
-              <span key="selected" style={{ fontWeight: 600, fontSize: '14px' }}>
-                ✅ Selected Warehouses ({selectedWarehouses.length})
-              </span>
-            ]}
-            listStyle={{
-              width: 380,
-              height: 400,
-              border: '1px solid #d9d9d9',
-              borderRadius: '6px'
-            }}
-            oneWay
-            pagination={{
-              pageSize: 5,
-              simple: true
-            }}
-            showSearch
-          />
+            });
+            
+            return (
+              <Transfer
+                dataSource={filteredData}
+                targetKeys={selectedWarehouses}
+                onChange={handleWarehouseSelection}
+                render={renderWarehouseItem}
+                titles={[
+                  <span key="available" style={{ fontWeight: 600, fontSize: '14px' }}>
+                    📦 Available Warehouses
+                  </span>, 
+                  <span key="selected" style={{ fontWeight: 600, fontSize: '14px' }}>
+                    ✅ Selected Warehouses
+                  </span>
+                ]}
+                listStyle={{
+                  width: 380,
+                  height: 400,
+                  border: '1px solid #d9d9d9',
+                  borderRadius: '6px'
+                }}
+                oneWay
+                pagination={{
+                  pageSize: 5,
+                  simple: true
+                }}
+                showSearch
+              />
+            );
+          })()}
           
           {selectedWarehouses.length > 0 && (
             <div style={{ marginTop: '20px' }}>
@@ -834,7 +836,7 @@ const SegmentationPage: React.FC = () => {
                         .filter(w => selectedWarehouses.includes(w.id))
                         .map(w => w.domain)
                       )].map(domain => (
-                        <Tag key={domain} color={domain === 'Getir10' ? 'blue' : 'green'} style={{ margin: '2px' }}>
+                        <Tag key={domain} color={domain === 'Getir' ? 'blue' : 'green'} style={{ margin: '2px' }}>
                           {domain}
                         </Tag>
                       ))}

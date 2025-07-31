@@ -1,6 +1,25 @@
 import * as XLSX from 'xlsx';
 import { ExportOptions } from '@/types';
 
+// Apply special rounding logic for Getir prices (same as in IndexPage)
+const applyGetirRounding = (price: number): number => {
+  // Get integer and decimal parts
+  const integerPart = Math.floor(price);
+  const decimalPart = price - integerPart;
+  
+  // Apply special rounding logic for Getir prices
+  if (decimalPart === 0) {
+    // Keep whole numbers as is
+    return Number(price.toFixed(2));
+  } else if (decimalPart < 0.5) {
+    // Round to x.5 for decimal values under x.5
+    return integerPart + 0.5;
+  } else {
+    // Round to x.99 for decimal values over x.5 (including 0.5)
+    return integerPart + 0.99;
+  }
+};
+
 // Export data to CSV format
 export const exportToCSV = (data: any[], filename: string, options?: ExportOptions) => {
   const headers = options?.selectedColumns || Object.keys(data[0] || {});
@@ -71,14 +90,21 @@ export const exportToExcel = (data: any[], filename: string, options?: ExportOpt
 };
 
 // Export product matches data
-export const exportProductMatches = (data: Record<string, string | number>[], format: 'csv' | 'xlsx') => {
+export const exportProductMatches = (
+  data: Record<string, string | number>[], 
+  format: 'csv' | 'xlsx',
+  discountRates?: Record<string, number>
+) => {
   if (!data || data.length === 0) {
     console.warn('No data to export');
     return;
   }
 
-  // Define all the fields we want to export - now including segment information
-  const headers = [
+  // Check if any discount rates are set
+  const hasDiscountRates = discountRates && Object.keys(discountRates).length > 0;
+
+  // Define base headers
+  const baseHeaders = [
     'Product ID',
     'Product Name', 
     'Segment ID',
@@ -92,20 +118,54 @@ export const exportProductMatches = (data: Record<string, string | number>[], fo
     'Competitor Price'
   ];
 
+  // Always include discount columns if any discount rates exist
+  const headers = hasDiscountRates 
+    ? [...baseHeaders, 'Discount Rate (%)', 'Struck Price']
+    : baseHeaders;
+
   // Map the data to include all fields including segment data
-  const exportData = data.map(item => ({
-    'Product ID': item.id || '',
-    'Product Name': item.getirProductName || '',
-    'Segment ID': item.segmentId || '',
-    'Segment Name': item.segmentName || '',
-    'Competitor': item.competitor || '',
-    'Category': item.category || '',
-    'Sub Category': item.subCategory || '',
-    'KVI Type': item.kviType || '',
-    'Index Value': item.ix || 0,
-    'Getir Unit Price': item.getirUnitPrice || 0,
-    'Competitor Price': item.competitorPrice || 0
-  }));
+  const exportData = data.map(item => {
+    const baseData = {
+      'Product ID': item.id || '',
+      'Product Name': item.getirProductName || '',
+      'Segment ID': item.segmentId || '',
+      'Segment Name': item.segmentName || '',
+      'Competitor': item.competitor || '',
+      'Category': item.category || '',
+      'Sub Category': item.subCategory || '',
+      'KVI Type': item.kviType || '',
+      'Index Value': item.ix || 0,
+      'Getir Unit Price': item.getirUnitPrice || 0,
+      'Competitor Price': item.competitorPrice || 0
+    };
+
+    // Check if this specific product has a discount rate
+    const productKey = item.key as string;
+    const hasProductDiscountRate = discountRates && discountRates[productKey] !== undefined;
+
+    if (hasDiscountRates && hasProductDiscountRate) {
+      // This product has a discount rate - include struck price
+      const discountRate = discountRates[productKey];
+      const getirPrice = item.getirUnitPrice as number || 0;
+      const rawStruckPrice = getirPrice * (1 - discountRate / 100);
+      const struckPrice = applyGetirRounding(rawStruckPrice);
+      
+      return {
+        ...baseData,
+        'Discount Rate (%)': discountRate,
+        'Struck Price': struckPrice
+      };
+    } else if (hasDiscountRates) {
+      // This product has no discount rate but other products do - include empty discount columns
+      return {
+        ...baseData,
+        'Discount Rate (%)': '',
+        'Struck Price': ''
+      };
+    }
+
+    return baseData;
+  });
 
   if (format === 'csv') {
     exportToCSV(exportData, 'product-matches');

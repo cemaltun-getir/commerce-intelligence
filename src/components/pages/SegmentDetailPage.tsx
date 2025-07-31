@@ -17,14 +17,15 @@ import {
   App,
   Skeleton,
   Transfer,
-  Divider
+  Divider,
+  Radio
 } from 'antd';
-import { ArrowLeftOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, EditOutlined, DeleteOutlined, AppstoreOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { segmentApi } from '@/utils/segmentApi';
 import { useAppStore } from '@/store/useAppStore';
-import { Segment, Warehouse, ApiLocation } from '@/types';
+import { Segment, Warehouse, PriceLocation } from '@/types';
 
 interface TransferItem {
   key: string;
@@ -47,9 +48,11 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
     updateSegment, 
     deleteSegment, 
     warehouses, 
-    apiLocations,
+    priceLocations,
+    segments,
     fetchWarehouses,
-    fetchApiLocations
+    fetchPriceLocations,
+    fetchSegments
   } = useAppStore();
   
   const [segment, setSegment] = useState<Segment | null>(null);
@@ -64,6 +67,7 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
     demography: '',
     size: ''
   });
+  const [warehouseViewMode, setWarehouseViewMode] = useState<'grid' | 'list'>('grid');
   const [form] = Form.useForm();
 
   // Fetch segment details and warehouses
@@ -85,9 +89,21 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
     if (segmentId) {
       fetchSegment();
       fetchWarehouses();
-      fetchApiLocations();
+      fetchPriceLocations();
+      fetchSegments();
     }
-  }, [segmentId, message, fetchWarehouses, fetchApiLocations]);
+  }, [segmentId, message, fetchWarehouses, fetchPriceLocations, fetchSegments]);
+
+  // Get available warehouses (not assigned to any segment except current one)
+  const getAvailableWarehouses = (): Warehouse[] => {
+    const allAssignedWarehouseIds = segments
+      .filter(seg => seg.id !== segmentId) // Exclude current segment
+      .flatMap(seg => seg.warehouseIds || []);
+    
+    return warehouses.filter(warehouse => 
+      !allAssignedWarehouseIds.includes(warehouse.id)
+    );
+  };
 
   // Warehouse selection handlers
   const handleWarehouseSelection = (targetKeys: React.Key[]) => {
@@ -95,7 +111,9 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
   };
 
   const getWarehouseTransferData = (): TransferItem[] => {
-    return warehouses.map(warehouse => ({
+    const availableWarehouses = getAvailableWarehouses();
+    
+    return availableWarehouses.map(warehouse => ({
       key: warehouse.id,
       title: warehouse.name,
       description: `${warehouse.province}, ${warehouse.district} - ${warehouse.domain}`,
@@ -135,7 +153,7 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
             flexWrap: 'wrap'
           }}>
             <Tag 
-              color={warehouse.domain === 'Getir10' ? 'blue' : 'green'} 
+              color={warehouse.domain === 'Getir' ? 'blue' : 'green'} 
               style={{ fontSize: '11px', margin: '0 2px 2px 0' }}
             >
               {warehouse.domain}
@@ -167,7 +185,7 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
     if (segment) {
       form.setFieldsValue({
         name: segment.name,
-        apiLocation: segment.apiLocation
+        priceLocation: segment.priceLocation
       });
       setSelectedWarehouses(segment.warehouseIds || []);
       setIsEditModalVisible(true);
@@ -193,7 +211,7 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
       await updateSegment(segmentId, {
         name: values.name,
         warehouseIds: selectedWarehouses,
-        apiLocation: values.apiLocation
+        priceLocation: values.priceLocation
       });
       
       // Refresh segment data to get updated computed fields
@@ -265,7 +283,7 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
             <Space wrap>
               {segment.domains && segment.domains.length > 0 ? (
                 segment.domains.map((domain, index) => (
-                  <Tag key={index} color={domain === 'Getir10' ? 'green' : 'blue'} style={{ fontSize: '14px' }}>
+                  <Tag key={index} color={domain === 'Getir' ? 'green' : 'blue'} style={{ fontSize: '14px' }}>
                     {domain}
                   </Tag>
                 ))
@@ -305,7 +323,7 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
             <Space wrap>
               {segment.domains && segment.domains.length > 0 ? (
                 segment.domains.map((domain, index) => (
-                  <Tag key={index} color={domain === 'Getir10' ? 'green' : 'blue'}>
+                  <Tag key={index} color={domain === 'Getir' ? 'green' : 'blue'}>
                     {domain}
                   </Tag>
                 ))
@@ -315,13 +333,68 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
             </Space>
           </Descriptions.Item>
           <Descriptions.Item label="Warehouse Count">
-            <Text strong>{segment.warehouseIds?.length?.toLocaleString() || '0'}</Text>
+            <Text strong>{segment.warehouseIds?.length || 0}</Text>
+          </Descriptions.Item>
+          <Descriptions.Item label="Provinces">
+            <Space wrap>
+              {segment.provinces && segment.provinces.length > 0 ? (
+                segment.provinces.map((province, index) => (
+                  <Tag key={index} color="blue">{province}</Tag>
+                ))
+              ) : (
+                <Text type="secondary">No provinces</Text>
+              )}
+            </Space>
+          </Descriptions.Item>
+          <Descriptions.Item label="Districts">
+            <Space wrap>
+              {segment.districts && segment.districts.length > 0 ? (
+                segment.districts.map((district, index) => (
+                  <Tag key={index} color="green">{district}</Tag>
+                ))
+              ) : (
+                <Text type="secondary">No districts</Text>
+              )}
+            </Space>
+          </Descriptions.Item>
+          <Descriptions.Item label="Regions">
+            <Space wrap>
+              {segment.regions && segment.regions.length > 0 ? (
+                segment.regions.map((region, index) => (
+                  <Tag key={index} color="volcano">{region}</Tag>
+                ))
+              ) : (
+                <Text type="secondary">No regions</Text>
+              )}
+            </Space>
+          </Descriptions.Item>
+          <Descriptions.Item label="Demographies">
+            <Space wrap>
+              {segment.demographies && segment.demographies.length > 0 ? (
+                segment.demographies.map((demography, index) => (
+                  <Tag key={index} color="orange">{demography}</Tag>
+                ))
+              ) : (
+                <Text type="secondary">No demographies</Text>
+              )}
+            </Space>
+          </Descriptions.Item>
+          <Descriptions.Item label="Sizes" span={2}>
+            <Space wrap>
+              {segment.sizes && segment.sizes.length > 0 ? (
+                segment.sizes.map((size, index) => (
+                  <Tag key={index} color="purple">{size}</Tag>
+                ))
+              ) : (
+                <Text type="secondary">No sizes</Text>
+              )}
+            </Space>
           </Descriptions.Item>
           <Descriptions.Item label="API Location" span={2}>
             <Text strong>
               {(() => {
-                const location = apiLocations.find(loc => loc.id === segment.apiLocation);
-                return location ? `${location.displayName} (${location.region})` : segment.apiLocation;
+                const location = priceLocations.find(loc => loc.id === segment.priceLocation);
+                return location ? location.name : segment.priceLocation;
               })()}
             </Text>
           </Descriptions.Item>
@@ -331,64 +404,169 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
         </Descriptions>
       </Card>
 
-      {/* Geographic Information */}
-      <Row gutter={16} style={{ marginBottom: '16px' }}>
-        <Col span={12}>
-          <Card title="Provinces" size="small">
-            {segment.provinces && segment.provinces.length > 0 ? (
-              <Space wrap>
-                {segment.provinces.map((province, index) => (
-                  <Tag key={index} color="blue">{province}</Tag>
-                ))}
-              </Space>
-            ) : (
-              <Text type="secondary">No provinces specified</Text>
+
+
+      {/* Warehouses List */}
+      <Card 
+        title={
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Warehouses ({segment.warehouseIds?.length || 0})</span>
+            {segment.warehouseIds && segment.warehouseIds.length > 0 && (
+              <Radio.Group 
+                value={warehouseViewMode} 
+                onChange={(e) => setWarehouseViewMode(e.target.value)}
+                size="small"
+                buttonStyle="solid"
+              >
+                <Radio.Button value="grid">
+                  <AppstoreOutlined />
+                </Radio.Button>
+                <Radio.Button value="list">
+                  <UnorderedListOutlined />
+                </Radio.Button>
+              </Radio.Group>
             )}
-          </Card>
-        </Col>
-        <Col span={12}>
-          <Card title="Districts" size="small">
-            {segment.districts && segment.districts.length > 0 ? (
-              <Space wrap>
-                {segment.districts.map((district, index) => (
-                  <Tag key={index} color="green">{district}</Tag>
-                ))}
-              </Space>
-            ) : (
-              <Text type="secondary">No districts specified</Text>
-            )}
-          </Card>
-        </Col>
-      </Row>
-      
-      <Row gutter={16}>
-        <Col span={6}>
-          <Card title="Regions" size="small">
-            {segment.regions && segment.regions.length > 0 ? (
-              <Space wrap>
-                {segment.regions.map((region, index) => (
-                  <Tag key={index} color="volcano">{region}</Tag>
-                ))}
-              </Space>
-            ) : (
-              <Text type="secondary">No regions specified</Text>
-            )}
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card title="Demographies" size="small">
-            {segment.demographies && segment.demographies.length > 0 ? (
-              <Space wrap>
-                {segment.demographies.map((demography, index) => (
-                  <Tag key={index} color="orange">{demography}</Tag>
-                ))}
-              </Space>
-            ) : (
-              <Text type="secondary">No demographies specified</Text>
-            )}
-          </Card>
-        </Col>
-      </Row>
+          </div>
+        }
+        style={{ marginTop: '24px' }}
+      >
+        {segment.warehouseIds && segment.warehouseIds.length > 0 ? (
+          warehouseViewMode === 'grid' ? (
+            <Row gutter={[16, 16]}>
+              {segment.warehouseIds.map((warehouseId) => {
+                const warehouse = warehouses.find(w => w.id === warehouseId);
+                if (!warehouse) return null;
+                
+                return (
+                  <Col xs={24} sm={12} md={8} lg={6} key={warehouseId}>
+                    <Card 
+                      size="small" 
+                      hoverable
+                      style={{ 
+                        height: '100%',
+                        border: '1px solid #f0f0f0',
+                        borderRadius: '8px'
+                      }}
+                      styles={{ body: { padding: '12px' } }}
+                    >
+                      <div style={{ marginBottom: '8px' }}>
+                        <Text strong style={{ fontSize: '14px', color: '#262626' }}>
+                          {warehouse.name}
+                        </Text>
+                      </div>
+                      
+                      <div style={{ marginBottom: '8px' }}>
+                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                          📍 {warehouse.province}, {warehouse.district}
+                        </Text>
+                      </div>
+                      
+                      <div style={{ marginBottom: '8px' }}>
+                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                          🏢 {warehouse.region}
+                        </Text>
+                      </div>
+                      
+                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                        <Tag 
+                          color={warehouse.domain === 'Getir' ? 'blue' : 'green'} 
+                          style={{ fontSize: '10px', margin: '0 2px 2px 0' }}
+                        >
+                          {warehouse.domain}
+                        </Tag>
+                        <Tag 
+                          color="orange" 
+                          style={{ fontSize: '10px', margin: '0 2px 2px 0' }}
+                        >
+                          {warehouse.size}
+                        </Tag>
+                        <Tag 
+                          color="purple" 
+                          style={{ fontSize: '10px', margin: '0 2px 2px 0' }}
+                        >
+                          {warehouse.demography}
+                        </Tag>
+                      </div>
+                    </Card>
+                  </Col>
+                );
+              })}
+            </Row>
+          ) : (
+            <div>
+              {segment.warehouseIds.map((warehouseId) => {
+                const warehouse = warehouses.find(w => w.id === warehouseId);
+                if (!warehouse) return null;
+                
+                return (
+                  <Card 
+                    key={warehouseId}
+                    size="small" 
+                    hoverable
+                    style={{ 
+                      marginBottom: '8px',
+                      border: '1px solid #f0f0f0',
+                      borderRadius: '6px'
+                    }}
+                    styles={{ body: { padding: '12px 16px' } }}
+                  >
+                    <Row align="middle" gutter={16}>
+                      <Col flex="auto">
+                        <div style={{ marginBottom: '4px' }}>
+                          <Text strong style={{ fontSize: '14px', color: '#262626' }}>
+                            {warehouse.name}
+                          </Text>
+                        </div>
+                        
+                        <div style={{ marginBottom: '4px' }}>
+                          <Text type="secondary" style={{ fontSize: '12px' }}>
+                            📍 {warehouse.province}, {warehouse.district} • 🏢 {warehouse.region}
+                          </Text>
+                        </div>
+                      </Col>
+                      
+                      <Col flex="none">
+                        <Space size="small">
+                          <Tag 
+                            color={warehouse.domain === 'Getir' ? 'blue' : 'green'} 
+                            style={{ fontSize: '11px' }}
+                          >
+                            {warehouse.domain}
+                          </Tag>
+                          <Tag 
+                            color="orange" 
+                            style={{ fontSize: '11px' }}
+                          >
+                            {warehouse.size}
+                          </Tag>
+                          <Tag 
+                            color="purple" 
+                            style={{ fontSize: '11px' }}
+                          >
+                            {warehouse.demography}
+                          </Tag>
+                        </Space>
+                      </Col>
+                    </Row>
+                  </Card>
+                );
+              })}
+            </div>
+          )
+        ) : (
+          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <Text type="secondary">No warehouses assigned to this segment</Text>
+            <br />
+            <Button 
+              type="primary" 
+              onClick={handleEdit}
+              style={{ marginTop: '16px' }}
+            >
+              Add Warehouses
+            </Button>
+          </div>
+        )}
+      </Card>
 
       {/* Edit Modal */}
       <Modal
@@ -414,20 +592,20 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
             <Input placeholder="Enter segment name" />
           </Form.Item>
 
-          <Form.Item
-            name="apiLocation"
-            label="API Location"
-            rules={[{ required: true, message: 'Please select an API location' }]}
-            tooltip="Select the location where competitor prices will be fetched from"
-          >
-            <Select placeholder="Select API location for pricing data">
-              {apiLocations.map(location => (
-                <Option key={location.id} value={location.id}>
-                  {location.displayName} ({location.region})
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
+                      <Form.Item
+              name="priceLocation"
+              label="Price Location"
+              rules={[{ required: true, message: 'Please select a price location' }]}
+              tooltip="Select the location where competitor prices will be fetched from"
+            >
+              <Select placeholder="Select price location for pricing data">
+                {priceLocations.map(location => (
+                  <Option key={location.id} value={location.id}>
+                    {location.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
           
           <Divider>Warehouse Selection</Divider>
           
@@ -441,8 +619,8 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
                   onChange={(value) => setWarehouseFilter(prev => ({ ...prev, domain: value || '' }))}
                   allowClear
                 >
-                  <Option value="Getir10">Getir10</Option>
-                  <Option value="Getir30">Getir30</Option>
+                  <Option value="Getir">Getir</Option>
+                  <Option value="Getir Büyük">Getir Büyük</Option>
                 </Select>
               </Col>
               <Col span={8}>
@@ -453,7 +631,7 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
                   onChange={(value) => setWarehouseFilter(prev => ({ ...prev, region: value || '' }))}
                   allowClear
                 >
-                  {[...new Set(warehouses.map(w => w.region))].map(region => (
+                  {[...new Set(getAvailableWarehouses().map(w => w.region))].map(region => (
                     <Option key={region} value={region}>{region}</Option>
                   ))}
                 </Select>
@@ -466,7 +644,7 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
                   onChange={(value) => setWarehouseFilter(prev => ({ ...prev, province: value || '' }))}
                   allowClear
                 >
-                  {[...new Set(warehouses.map(w => w.province))].map(province => (
+                  {[...new Set(getAvailableWarehouses().map(w => w.province))].map(province => (
                     <Option key={province} value={province}>{province}</Option>
                   ))}
                 </Select>
@@ -503,41 +681,64 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
             </Row>
           </div>
 
-          <Transfer
-            dataSource={getWarehouseTransferData().filter(item => {
-              const warehouse = warehouses.find(w => w.id === item.key);
-              if (!warehouse) return false;
-              
-              return (!warehouseFilter.domain || warehouse.domain === warehouseFilter.domain) &&
-                     (!warehouseFilter.region || warehouse.region === warehouseFilter.region) &&
-                     (!warehouseFilter.province || warehouse.province === warehouseFilter.province) &&
-                     (!warehouseFilter.size || warehouse.size === warehouseFilter.size) &&
-                     (!warehouseFilter.demography || warehouse.demography === warehouseFilter.demography);
-            })}
-            targetKeys={selectedWarehouses}
-            onChange={handleWarehouseSelection}
-            render={renderWarehouseItem}
-            titles={[
-              <span key="available" style={{ fontWeight: 600, fontSize: '14px' }}>
-                📦 Available Warehouses ({warehouses.length})
-              </span>, 
-              <span key="selected" style={{ fontWeight: 600, fontSize: '14px' }}>
-                ✅ Selected Warehouses ({selectedWarehouses.length})
-              </span>
-            ]}
-            listStyle={{
-              width: 380,
-              height: 350,
-              border: '1px solid #d9d9d9',
-              borderRadius: '6px'
-            }}
-            oneWay
-            pagination={{
-              pageSize: 5,
-              simple: true
-            }}
-            showSearch
-          />
+          {(() => {
+            // Get available warehouses for display
+            const availableWarehouses = getAvailableWarehouses();
+            
+            // Get currently selected warehouses that might not be available anymore
+            const selectedWarehousesData = selectedWarehouses
+              .map(id => warehouses.find(w => w.id === id))
+              .filter(w => w && !availableWarehouses.find(aw => aw.id === w.id));
+            
+            // Combine available warehouses with selected warehouses that are no longer available
+            const allDisplayWarehouses = [...availableWarehouses, ...selectedWarehousesData];
+            
+            const filteredData = allDisplayWarehouses
+              .filter((warehouse): warehouse is Warehouse => {
+                if (!warehouse) return false;
+                
+                return (!warehouseFilter.domain || warehouse.domain === warehouseFilter.domain) &&
+                       (!warehouseFilter.region || warehouse.region === warehouseFilter.region) &&
+                       (!warehouseFilter.province || warehouse.province === warehouseFilter.province) &&
+                       (!warehouseFilter.size || warehouse.size === warehouseFilter.size) &&
+                       (!warehouseFilter.demography || warehouse.demography === warehouseFilter.demography);
+              })
+              .map(warehouse => ({
+                key: warehouse.id,
+                title: warehouse.name,
+                description: `${warehouse.province}, ${warehouse.district} - ${warehouse.domain}`,
+                chosen: selectedWarehouses.includes(warehouse.id)
+              }));
+            
+            return (
+              <Transfer
+                dataSource={filteredData}
+                targetKeys={selectedWarehouses}
+                onChange={handleWarehouseSelection}
+                render={renderWarehouseItem}
+                titles={[
+                  <span key="available" style={{ fontWeight: 600, fontSize: '14px' }}>
+                    📦 Available Warehouses
+                  </span>, 
+                  <span key="selected" style={{ fontWeight: 600, fontSize: '14px' }}>
+                    ✅ Selected Warehouses
+                  </span>
+                ]}
+                listStyle={{
+                  width: 380,
+                  height: 350,
+                  border: '1px solid #d9d9d9',
+                  borderRadius: '6px'
+                }}
+                oneWay
+                pagination={{
+                  pageSize: 5,
+                  simple: true
+                }}
+                showSearch
+              />
+            );
+          })()}
           
           {selectedWarehouses.length > 0 && (
             <div style={{ marginTop: '16px' }}>
