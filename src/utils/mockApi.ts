@@ -7,7 +7,7 @@ import {
   BoundaryRule,
   ApiResponse,
   Warehouse,
-  ApiLocation
+  PriceLocation
 } from '@/types';
 
 // Mock data
@@ -18,62 +18,46 @@ export const mockCompetitors: Competitor[] = [
 ];
 
 // Mock API locations where competitor pricing data is available
-export const mockApiLocations: ApiLocation[] = [
+export const mockApiLocations: PriceLocation[] = [
   {
     id: 'istanbul',
     name: 'istanbul',
-    displayName: 'Istanbul',
-    region: 'Marmara',
-    isActive: true
+    created_at: '2024-01-01T00:00:00Z'
   },
   {
     id: 'ankara',
     name: 'ankara', 
-    displayName: 'Ankara',
-    region: 'Central Anatolia',
-    isActive: true
+    created_at: '2024-01-01T00:00:00Z'
   },
   {
     id: 'izmir',
     name: 'izmir',
-    displayName: 'Izmir', 
-    region: 'Aegean',
-    isActive: true
+    created_at: '2024-01-01T00:00:00Z'
   },
   {
     id: 'antalya',
     name: 'antalya',
-    displayName: 'Antalya',
-    region: 'Mediterranean', 
-    isActive: true
+    created_at: '2024-01-01T00:00:00Z'
   },
   {
     id: 'bursa',
     name: 'bursa',
-    displayName: 'Bursa',
-    region: 'Marmara',
-    isActive: true
+    created_at: '2024-01-01T00:00:00Z'
   },
   {
     id: 'adana',
     name: 'adana',
-    displayName: 'Adana',
-    region: 'Mediterranean',
-    isActive: true
+    created_at: '2024-01-01T00:00:00Z'
   },
   {
     id: 'gaziantep',
     name: 'gaziantep',
-    displayName: 'Gaziantep',
-    region: 'Southeastern Anatolia',
-    isActive: true
+    created_at: '2024-01-01T00:00:00Z'
   },
   {
     id: 'konya',
     name: 'konya',
-    displayName: 'Konya',
-    region: 'Central Anatolia',
-    isActive: false // Example of inactive location
+    created_at: '2024-01-01T00:00:00Z'
   }
 ];
 
@@ -209,50 +193,98 @@ export const mockProducts: Product[] = [
   {
     id: '64e23a1c5d9ef1204abcde1',
     name: 'Soke Un (1 kg)',
-    category: 'Basic Foods',
-    subCategory: 'Flour & Grains',
-    sku: 'SK001',
-    getirUnitPrice: 23,
+    brand: 'Soke',
+    unit: 'kg',
+    unit_value: '1',
+    category_id: 'cat1',
+    category_name: 'Basic Foods',
+    sub_category_id: 'subcat1',
+    sub_category_name: 'Flour & Grains',
+    kvi_label: 'SKVI',
+    created_at: '2024-01-01T00:00:00Z',
+    buying_price: 15.99,
+    buying_vat: 20.0,
+    buying_price_without_vat: 13.33,
   },
   {
     id: '60b7c4f3af125812i9d3aa4',
     name: 'Coca Cola 330ml x2',
-    category: 'Beverages',
-    subCategory: 'Soft Drinks',
-    sku: 'BV001',
-    getirUnitPrice: 115,
+    brand: 'Coca Cola',
+    unit: 'ml',
+    unit_value: '660',
+    category_id: 'cat2',
+    category_name: 'Beverages',
+    sub_category_id: 'subcat2',
+    sub_category_name: 'Soft Drinks',
+    kvi_label: 'KVI',
+    created_at: '2024-01-01T00:00:00Z',
+    buying_price: 89.99,
+    buying_vat: 20.0,
+    buying_price_without_vat: 74.99,
   },
   {
     id: '62a7d6e4f2c34c1a80ea4f50',
     name: 'Tamek Domates Salçası',
-    category: 'Canned Foods',
-    subCategory: 'Tomato Products',
-    sku: 'CF001',
-    getirUnitPrice: 22,
+    brand: 'Tamek',
+    unit: 'g',
+    unit_value: '850',
+    category_id: 'cat3',
+    category_name: 'Canned Foods',
+    sub_category_id: 'subcat3',
+    sub_category_name: 'Tomato Products',
+    kvi_label: 'Foreground',
+    created_at: '2024-01-01T00:00:00Z',
+    buying_price: 14.50,
+    buying_vat: 20.0,
+    buying_price_without_vat: 12.08,
   },
   {
     id: '5ebc1a09293ed4107f56bd90',
     name: 'Sütaş Beyaz Peynir',
-    category: 'Dairy',
-    subCategory: 'Cheese',
-    sku: 'DR001',
-    getirUnitPrice: 44,
+    brand: 'Sütaş',
+    unit: 'g',
+    unit_value: '500',
+    category_id: 'cat4',
+    category_name: 'Dairy',
+    sub_category_id: 'subcat4',
+    sub_category_name: 'Cheese',
+    kvi_label: 'Background',
+    created_at: '2024-01-01T00:00:00Z',
+    buying_price: 32.99,
+    buying_vat: 20.0,
+    buying_price_without_vat: 27.49,
   },
   {
     id: '6d59b871817d9c5ec3aab72',
     name: 'Soke Çavdar Unu (1 kg)',
-    category: 'Basic Foods',
-    subCategory: 'Flour & Grains',
-    sku: 'SK002',
-    getirUnitPrice: 25,
+    brand: 'Soke',
+    unit: 'kg',
+    unit_value: '1',
+    category_id: 'cat1',
+    category_name: 'Basic Foods',
+    sub_category_id: 'subcat1',
+    sub_category_name: 'Flour & Grains',
+    kvi_label: 'SKVI',
+    created_at: '2024-01-01T00:00:00Z',
+    buying_price: 18.75,
+    buying_vat: 20.0,
+    buying_price_without_vat: 15.63,
   },
   {
     id: '608bdb7280c9e0ef5d3986c4',
     name: 'Soke Çavdar Unu (2 kg)',
-    category: 'Basic Foods',
-    subCategory: 'Flour & Grains',
-    sku: 'SK003',
-    getirUnitPrice: 50,
+    brand: 'Soke',
+    unit: 'kg',
+    unit_value: '2',
+    category_id: 'cat1',
+    category_name: 'Basic Foods',
+    sub_category_id: 'subcat1',
+    sub_category_name: 'Flour & Grains',
+    kvi_label: 'SKVI',
+    created_at: '2024-01-01T00:00:00Z',
+    buying_price: 37.50,
+    buying_vat: 20.0,
+    buying_price_without_vat: 31.25,
   },
 ];
 
@@ -428,9 +460,9 @@ export const mockApi = {
   },
 
   // Get all API locations
-  async getApiLocations(): Promise<ApiLocation[]> {
+  async getApiLocations(): Promise<PriceLocation[]> {
     await new Promise(resolve => setTimeout(resolve, 200));
-    return mockApiLocations.filter(location => location.isActive);
+    return mockApiLocations;
   },
 
   // Get all warehouses

@@ -14,9 +14,11 @@ import {
   Tag,
   Dropdown,
   Tooltip,
-  App
+  App,
+  Checkbox,
+  Space
 } from 'antd';
-import { EditOutlined, ExportOutlined, DownOutlined, CopyOutlined, CheckOutlined, ClearOutlined } from '@ant-design/icons';
+import { EditOutlined, ExportOutlined, DownOutlined, CopyOutlined, CheckOutlined, ClearOutlined, SettingOutlined } from '@ant-design/icons';
 import { exportProductMatches } from '@/utils/exportUtils';
 import { useAppStore } from '@/store/useAppStore';
 import ClientOnlyTable from '../common/ClientOnlyTable';
@@ -24,6 +26,96 @@ import ClientOnlyTable from '../common/ClientOnlyTable';
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { useApp } = App;
+
+// Define all available columns with their metadata
+const ALL_COLUMNS = [
+  {
+    key: 'getirProductName',
+    title: 'Getir Product Name',
+    width: 200,
+    fixed: 'left' as const,
+    defaultVisible: true,
+    alwaysVisible: true, // This column cannot be hidden
+  },
+  {
+    key: 'segmentName',
+    title: 'Segment',
+    width: 120,
+    defaultVisible: true,
+  },
+  {
+    key: 'competitor',
+    title: 'Competitor',
+    width: 120,
+    defaultVisible: true,
+  },
+  {
+    key: 'kviType',
+    title: 'KVI Label',
+    width: 120,
+    defaultVisible: true,
+  },
+  {
+    key: 'ix',
+    title: 'IX',
+    width: 60,
+    defaultVisible: true,
+  },
+  {
+    key: 'buyingPrice',
+    title: 'Buying Price',
+    width: 140,
+    defaultVisible: true,
+  },
+  {
+    key: 'buyingPriceWithoutVat',
+    title: 'Buying Price (w/o VAT)',
+    width: 160,
+    defaultVisible: true,
+  },
+  {
+    key: 'getirUnitPrice',
+    title: 'Getir Unit Price',
+    width: 140,
+    defaultVisible: true,
+  },
+  {
+    key: 'profit',
+    title: 'Profit',
+    width: 140,
+    defaultVisible: true,
+  },
+  {
+    key: 'competitorPrice',
+    title: 'Competitor Price',
+    width: 140,
+    defaultVisible: true,
+  },
+  {
+    key: 'isDiscounted',
+    title: 'Disc.',
+    width: 80,
+    defaultVisible: true,
+  },
+  {
+    key: 'struckPrice',
+    title: 'Struck Price (Original)',
+    width: 140,
+    defaultVisible: false,
+  },
+  {
+    key: 'discountRate',
+    title: 'Discount Rate (%)',
+    width: 150,
+    defaultVisible: true,
+  },
+  {
+    key: 'struckPriceCalculated',
+    title: 'Struck Price (Calculated)',
+    width: 140,
+    defaultVisible: false,
+  },
+];
 
 const IndexPage: React.FC = () => {
   const { message } = useApp();
@@ -35,10 +127,43 @@ const IndexPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedSubCategory, setSelectedSubCategory] = useState('all');
   const [selectedCompetitorFilter, setSelectedCompetitorFilter] = useState('all');
+  const [selectedDiscountedFilter, setSelectedDiscountedFilter] = useState('all');
+  
+  // Column visibility state
+  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
+    // Always start with default visible columns and always-visible columns to avoid hydration mismatch
+    const defaultVisible = new Set(
+      ALL_COLUMNS.filter(col => col.defaultVisible || col.alwaysVisible).map(col => col.key)
+    );
+    return defaultVisible;
+  });
+
+  // Track if preferences have been loaded from localStorage
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+
+  // Load saved preferences after component mounts (client-side only)
+  useEffect(() => {
+    try {
+      const savedColumns = localStorage.getItem('product-list-visible-columns');
+      if (savedColumns) {
+        const parsedColumns = JSON.parse(savedColumns);
+        if (Array.isArray(parsedColumns)) {
+          setVisibleColumns(new Set(parsedColumns));
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load column preferences from localStorage:', error);
+    } finally {
+      setPreferencesLoaded(true);
+    }
+  }, []);
   
   // Discount rates state - store discount rates for each product
   const [discountRates, setDiscountRates] = useState<Record<string, number>>({});
   const [applyAllDiscountRate, setApplyAllDiscountRate] = useState<string>('');
+  
+  // Selection state for product table
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   
   // Connect to store
   const { 
@@ -321,6 +446,13 @@ const IndexPage: React.FC = () => {
           unit_value: priceMapping.unit_value,
           location_id: priceMapping.location_id,
           location_name: priceMapping.location_name,
+          // New fields from API
+          isDiscounted: priceMapping.is_discounted,
+          struckPrice: priceMapping.struck_price,
+          // New buying price fields from SKU API
+          buyingPrice: product?.buying_price,
+          buyingVat: product?.buying_vat,
+          buyingPriceWithoutVat: product?.buying_price_without_vat,
         };
 
         const kviType = getKviTypeFromLabel(baseProduct.kviLabel);
@@ -352,6 +484,13 @@ const IndexPage: React.FC = () => {
           // Add metadata for better error messaging
           hasApiLocation: !!segment.priceLocation,
           hasIndexValue: ix !== null,
+          // New fields from API
+          isDiscounted: baseProduct.isDiscounted,
+          struckPrice: baseProduct.struckPrice,
+          // New buying price fields from SKU API
+          buyingPrice: baseProduct.buyingPrice,
+          buyingVat: baseProduct.buyingVat,
+          buyingPriceWithoutVat: baseProduct.buyingPriceWithoutVat,
         });
         keyCounter++;
       });
@@ -391,11 +530,34 @@ const IndexPage: React.FC = () => {
       filtered = filtered.filter(product => product.competitorId === selectedCompetitorFilter);
     }
     
+    // Apply discounted filter
+    if (selectedDiscountedFilter && selectedDiscountedFilter !== 'all') {
+      if (selectedDiscountedFilter === 'discounted') {
+        filtered = filtered.filter(product => product.isDiscounted === true);
+      } else if (selectedDiscountedFilter === 'not-discounted') {
+        filtered = filtered.filter(product => product.isDiscounted === false);
+      }
+    }
+    
     return filtered;
-  }, [productData, searchText, selectedCategory, selectedSubCategory, selectedCompetitorFilter]);
+  }, [productData, searchText, selectedCategory, selectedSubCategory, selectedCompetitorFilter, selectedDiscountedFilter]);
+
+  // Clear selection when filters change
+  useEffect(() => {
+    setSelectedRowKeys([]);
+  }, [searchText, selectedCategory, selectedSubCategory, selectedCompetitorFilter, selectedDiscountedFilter]);
 
   const handleExport = (format: 'csv' | 'xlsx') => {
-    // Ask user if they want to export all products or just filtered results
+    // If there are selected items, export only those
+    if (selectedRowKeys.length > 0) {
+      const selectedData = filteredProductData.filter(product => 
+        selectedRowKeys.includes(product.key)
+      );
+      exportProductMatches(selectedData, format, discountRates);
+      return;
+    }
+    
+    // If no selections, ask user if they want to export all products or just filtered results
     if (filteredProductData.length !== productData.length) {
       // If there are filters applied, ask what to export
       const exportAll = window.confirm(
@@ -417,12 +579,16 @@ const IndexPage: React.FC = () => {
   const exportMenuItems = [
     {
       key: 'csv',
-      label: 'Export as CSV',
+      label: selectedRowKeys.length > 0 
+        ? `Export ${selectedRowKeys.length} selected as CSV`
+        : 'Export as CSV',
       onClick: () => handleExport('csv'),
     },
     {
       key: 'xlsx', 
-      label: 'Export as Excel',
+      label: selectedRowKeys.length > 0 
+        ? `Export ${selectedRowKeys.length} selected as Excel`
+        : 'Export as Excel',
       onClick: () => handleExport('xlsx'),
     },
   ];
@@ -482,7 +648,6 @@ const IndexPage: React.FC = () => {
               onChange={(e) => handleIndexValueChange(e.target.value, segmentId, kviType)}
               type="number"
               min={0}
-              max={100}
             />
           );
         },
@@ -515,7 +680,145 @@ const IndexPage: React.FC = () => {
     return [];
   }, [categories, subCategories, selectedCategory]);
 
-  // Product list columns
+  // Column customization functions
+  const handleColumnVisibilityChange = (columnKey: string, visible: boolean) => {
+    // Prevent hiding always-visible columns
+    const column = ALL_COLUMNS.find(col => col.key === columnKey);
+    if (column?.alwaysVisible && !visible) {
+      return; // Don't allow hiding always-visible columns
+    }
+
+    setVisibleColumns(prev => {
+      const newSet = new Set(prev);
+      if (visible) {
+        newSet.add(columnKey);
+      } else {
+        newSet.delete(columnKey);
+      }
+      
+      // Save to localStorage
+      try {
+        localStorage.setItem('product-list-visible-columns', JSON.stringify(Array.from(newSet)));
+      } catch (error) {
+        console.warn('Failed to save column preferences to localStorage:', error);
+      }
+      
+      return newSet;
+    });
+  };
+
+  const resetToDefaultColumns = () => {
+    const defaultVisible = new Set(
+      ALL_COLUMNS.filter(col => col.defaultVisible || col.alwaysVisible).map(col => col.key)
+    );
+    setVisibleColumns(defaultVisible);
+    
+    // Save to localStorage
+    try {
+      localStorage.setItem('product-list-visible-columns', JSON.stringify(Array.from(defaultVisible)));
+    } catch (error) {
+      console.warn('Failed to save column preferences to localStorage:', error);
+    }
+  };
+
+  const selectAllColumns = () => {
+    const allColumnKeys = new Set(ALL_COLUMNS.map(col => col.key));
+    setVisibleColumns(allColumnKeys);
+    
+    // Save to localStorage
+    try {
+      localStorage.setItem('product-list-visible-columns', JSON.stringify(Array.from(allColumnKeys)));
+    } catch (error) {
+      console.warn('Failed to save column preferences to localStorage:', error);
+    }
+  };
+
+  const deselectAllColumns = () => {
+    // Always include always-visible columns even when deselecting all
+    const alwaysVisibleColumns = new Set(
+      ALL_COLUMNS.filter(col => col.alwaysVisible).map(col => col.key)
+    );
+    setVisibleColumns(alwaysVisibleColumns);
+    
+    // Save to localStorage
+    try {
+      localStorage.setItem('product-list-visible-columns', JSON.stringify(Array.from(alwaysVisibleColumns)));
+    } catch (error) {
+      console.warn('Failed to save column preferences to localStorage:', error);
+    }
+  };
+
+  // Column selector dropdown items
+  const columnSelectorItems = [
+    {
+      key: 'header',
+      label: (
+        <div style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0', marginBottom: '8px' }}>
+          <Text strong>Column Visibility</Text>
+          <br />
+          <Text type="secondary" style={{ fontSize: '12px' }}>
+            {preferencesLoaded ? visibleColumns.size : ALL_COLUMNS.filter(col => col.defaultVisible).length} of {ALL_COLUMNS.length} columns visible
+          </Text>
+        </div>
+      ),
+      disabled: true,
+    },
+    {
+      key: 'select-all',
+      label: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>Select All</span>
+          <Tag color="blue" style={{ fontSize: '11px', padding: '0 4px' }}>{ALL_COLUMNS.length}</Tag>
+        </div>
+      ),
+      onClick: selectAllColumns,
+    },
+    {
+      key: 'deselect-all',
+      label: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>Deselect All</span>
+          <Tag color="red" style={{ fontSize: '11px', padding: '0 4px' }}>0</Tag>
+        </div>
+      ),
+      onClick: deselectAllColumns,
+    },
+    {
+      key: 'reset-default',
+      label: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>Reset to Default</span>
+          <Tag color="green" style={{ fontSize: '11px', padding: '0 4px' }}>
+            {ALL_COLUMNS.filter(col => col.defaultVisible).length}
+          </Tag>
+        </div>
+      ),
+      onClick: resetToDefaultColumns,
+    },
+    {
+      type: 'divider' as const,
+    },
+    ...ALL_COLUMNS.map(column => ({
+      key: column.key,
+      label: (
+        <Checkbox
+          checked={visibleColumns.has(column.key)}
+          onChange={(e) => handleColumnVisibilityChange(column.key, e.target.checked)}
+          onClick={(e) => e.stopPropagation()}
+          disabled={column.alwaysVisible}
+        >
+          {column.title}
+        </Checkbox>
+      ),
+      onClick: () => {
+        // Toggle column visibility
+        const isCurrentlyVisible = visibleColumns.has(column.key);
+        handleColumnVisibilityChange(column.key, !isCurrentlyVisible);
+      },
+    })),
+  ];
+
+  // Product list columns - now filtered based on visible columns
   const productColumns = [
     {
       title: 'Getir Product Name',
@@ -588,6 +891,60 @@ const IndexPage: React.FC = () => {
       align: 'center' as const,
     },
     {
+      title: 'Buying Price',
+      dataIndex: 'buyingPrice',
+      key: 'buyingPrice',
+      width: 140,
+      align: 'center' as const,
+      render: (price: number | null | undefined, record: any) => {
+        if (price === null || price === undefined) {
+          return (
+            <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
+              No data
+            </div>
+          );
+        }
+        return (
+          <div style={{ color: '#722ed1', fontWeight: 'bold' }}>
+            ₺{price.toFixed(2)}
+            <div style={{ fontSize: '10px', color: '#999' }}>
+              (With VAT)
+            </div>
+          </div>
+        );
+      },
+    },
+
+    {
+      title: (
+        <div>
+          <div>Buying Price</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>w/o VAT</div>
+        </div>
+      ),
+      dataIndex: 'buyingPriceWithoutVat',
+      key: 'buyingPriceWithoutVat',
+      width: 160,
+      align: 'center' as const,
+      render: (price: number | null | undefined) => {
+        if (price === null || price === undefined) {
+          return (
+            <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
+              No data
+            </div>
+          );
+        }
+        return (
+          <div style={{ color: '#13c2c2', fontWeight: 'bold' }}>
+            ₺{price.toFixed(2)}
+            <div style={{ fontSize: '10px', color: '#999' }}>
+              (Without VAT)
+            </div>
+          </div>
+        );
+      },
+    },
+    {
       title: 'Getir Unit Price',
       dataIndex: 'getirUnitPrice',
       key: 'getirUnitPrice',
@@ -626,6 +983,51 @@ const IndexPage: React.FC = () => {
       },
     },
     {
+      title: 'Profit',
+      dataIndex: 'profit',
+      key: 'profit',
+      width: 140,
+      align: 'center' as const,
+      render: (value: any, record: any) => {
+        const getirPrice = record.getirUnitPrice;
+        const buyingPrice = record.buyingPrice;
+        
+        if (getirPrice === null || getirPrice === undefined) {
+          return (
+            <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
+              No Getir price
+            </div>
+          );
+        }
+        
+        if (buyingPrice === null || buyingPrice === undefined) {
+          return (
+            <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
+              No buying price
+            </div>
+          );
+        }
+        
+        const profit = getirPrice - buyingPrice;
+        const profitMargin = (profit / buyingPrice * 100).toFixed(1);
+        const isPositive = profit >= 0;
+        
+        return (
+          <div>
+            <div style={{ color: isPositive ? '#52c41a' : '#ff4d4f', fontWeight: 'bold' }}>
+              ₺{profit.toFixed(2)}
+            </div>
+            <div style={{ fontSize: '10px', color: isPositive ? '#52c41a' : '#ff4d4f', fontWeight: 'bold' }}>
+              {profitMargin}%
+            </div>
+            <div style={{ fontSize: '10px', color: '#999' }}>
+              (Margin)
+            </div>
+          </div>
+        );
+      },
+    },
+    {
       title: 'Competitor Price',
       dataIndex: 'competitorPrice',
       key: 'competitorPrice',
@@ -639,11 +1041,62 @@ const IndexPage: React.FC = () => {
             </div>
           );
         }
+        
+        const struckPrice = record.struckPrice;
+        const hasStruckPrice = struckPrice !== null && struckPrice !== undefined;
+        
         return (
-          <div style={{ color: '#666' }}>
+          <div style={{ color: hasStruckPrice ? '#ff4d4f' : '#666', textDecoration: hasStruckPrice ? 'line-through' : 'none' }}>
             ₺{price.toFixed(2)}
             <div style={{ fontSize: '10px', color: '#999' }}>
               (From API)
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Disc.',
+      dataIndex: 'isDiscounted',
+      key: 'isDiscounted',
+      width: 80,
+      align: 'center' as const,
+      render: (isDiscounted: boolean) => {
+        return (
+          <Tag color={isDiscounted ? 'green' : 'default'}>
+            {isDiscounted ? 'Yes' : 'No'}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: 'Struck Price (Original)',
+      dataIndex: 'struckPrice',
+      key: 'struckPrice',
+      width: 140,
+      align: 'center' as const,
+      render: (struckPrice: number | null, record: any) => {
+        if (struckPrice === null || struckPrice === undefined) {
+          return (
+            <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
+              No struck price
+            </div>
+          );
+        }
+        
+        const currentPrice = record.competitorPrice;
+        const percentageDiff = currentPrice ? ((currentPrice - struckPrice) / currentPrice * 100).toFixed(1) : '0.0';
+        
+        return (
+          <div>
+            <div style={{ color: '#52c41a', fontWeight: 'bold' }}>
+              ₺{struckPrice.toFixed(2)}
+            </div>
+            <div style={{ fontSize: '10px', color: '#52c41a', fontWeight: 'bold' }}>
+              {percentageDiff}%
+            </div>
+            <div style={{ fontSize: '10px', color: '#999' }}>
+              (Original)
             </div>
           </div>
         );
@@ -662,7 +1115,7 @@ const IndexPage: React.FC = () => {
             placeholder="0"
             style={{ 
               textAlign: 'center', 
-              width: '50px',
+              width: '70px',
               padding: '4px 8px',
               boxSizing: 'border-box'
             }}
@@ -670,7 +1123,6 @@ const IndexPage: React.FC = () => {
             onChange={(e) => handleDiscountRateChange(record.key, e.target.value)}
             type="number"
             min={0}
-            max={100}
             step={0.1}
           />
           <Button
@@ -696,9 +1148,9 @@ const IndexPage: React.FC = () => {
       ),
     },
     {
-      title: 'Struck Price',
-      dataIndex: 'struckPrice',
-      key: 'struckPrice',
+      title: 'Struck Price (Calculated)',
+      dataIndex: 'struckPriceCalculated',
+      key: 'struckPriceCalculated',
       width: 140,
       align: 'center' as const,
       render: (value: any, record: any) => {
@@ -729,6 +1181,11 @@ const IndexPage: React.FC = () => {
       },
     },
   ];
+
+  // Filter columns based on visibility, ensuring always-visible columns are included
+  const visibleProductColumns = productColumns.filter(column => 
+    visibleColumns.has(column.key) || ALL_COLUMNS.find(col => col.key === column.key)?.alwaysVisible
+  );
 
   return (
     <div style={{ padding: '24px' }}>
@@ -783,24 +1240,70 @@ const IndexPage: React.FC = () => {
             </Text>
           </Col>
           <Col>
-            <Dropdown 
-              menu={{ items: exportMenuItems }} 
-              trigger={['click']}
-            >
-              <Button 
-                type="primary" 
-                icon={<ExportOutlined />}
-                style={{ background: '#7C3AED' }}
+            <Space>
+              <Dropdown 
+                menu={{ items: columnSelectorItems }} 
+                trigger={['click']}
+                placement="bottomRight"
               >
-                Export <DownOutlined />
-              </Button>
-            </Dropdown>
+                <Button 
+                  icon={<SettingOutlined />}
+                  title="Customize columns"
+                  type={visibleColumns.size === 0 ? 'primary' : 'default'}
+                  danger={visibleColumns.size === 0}
+                >
+                  Columns ({preferencesLoaded ? visibleColumns.size : ALL_COLUMNS.filter(col => col.defaultVisible).length}/{ALL_COLUMNS.length})
+                </Button>
+              </Dropdown>
+              <Dropdown 
+                menu={{ items: exportMenuItems }} 
+                trigger={['click']}
+              >
+                <Button 
+                  type="primary" 
+                  icon={<ExportOutlined />}
+                  style={{ background: '#7C3AED' }}
+                >
+                  {selectedRowKeys.length > 0 
+                    ? `Export ${selectedRowKeys.length} selected` 
+                    : 'Export'
+                  } <DownOutlined />
+                </Button>
+              </Dropdown>
+            </Space>
           </Col>
         </Row>
 
+        {/* Selection Summary */}
+        {selectedRowKeys.length > 0 && (
+          <Row
+            justify="space-between"
+            align="middle"
+            style={{
+              marginBottom: '16px',
+              padding: '12px 16px',
+              backgroundColor: '#f0f2f5',
+              borderRadius: '6px'
+            }}
+          >
+            <Col>
+              <span style={{ fontWeight: 500 }}>
+                {selectedRowKeys.length} item{selectedRowKeys.length > 1 ? 's' : ''} selected
+              </span>
+            </Col>
+            <Col>
+              <Button
+                onClick={() => setSelectedRowKeys([])}
+              >
+                Clear Selection
+              </Button>
+            </Col>
+          </Row>
+        )}
+
         {/* Filters */}
         <Row gutter={16} style={{ marginBottom: '16px' }}>
-          <Col span={6}>
+          <Col span={4}>
             <Input 
               placeholder="Search products..." 
               value={searchText}
@@ -808,7 +1311,7 @@ const IndexPage: React.FC = () => {
               allowClear
             />
           </Col>
-          <Col span={6}>
+          <Col span={4}>
             <Select 
               placeholder="Category" 
               style={{ width: '100%' }}
@@ -823,7 +1326,7 @@ const IndexPage: React.FC = () => {
               ))}
             </Select>
           </Col>
-          <Col span={6}>
+          <Col span={4}>
             <Select 
               placeholder="Sub Category" 
               style={{ width: '100%' }}
@@ -838,7 +1341,7 @@ const IndexPage: React.FC = () => {
               ))}
             </Select>
           </Col>
-          <Col span={6}>
+          <Col span={4}>
             <Select 
               placeholder="Competitor" 
               style={{ width: '100%' }}
@@ -853,23 +1356,64 @@ const IndexPage: React.FC = () => {
               ))}
             </Select>
           </Col>
+          <Col span={4}>
+            <Select 
+              placeholder="Discounted" 
+              style={{ width: '100%' }}
+              value={selectedDiscountedFilter}
+              onChange={setSelectedDiscountedFilter}
+            >
+              <Option value="all">All Products</Option>
+              <Option value="discounted">Discounted Only</Option>
+              <Option value="not-discounted">Not Discounted</Option>
+            </Select>
+          </Col>
         </Row>
 
         {/* Product Table */}
-        <ClientOnlyTable
-          dataSource={filteredProductData}
-          columns={productColumns}
-          pagination={{
-            total: filteredProductData.length,
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-            pageSizeOptions: ['10', '20', '50', '100'],
-          }}
-          scroll={{ x: 1000 }}
-          rowKey="key"
-        />
+        {(preferencesLoaded ? visibleColumns.size : ALL_COLUMNS.filter(col => col.defaultVisible).length) === 0 ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '40px', 
+            backgroundColor: '#f5f5f5', 
+            borderRadius: '6px',
+            border: '1px dashed #d9d9d9'
+          }}>
+            <Text type="secondary" style={{ fontSize: '16px' }}>
+              No columns selected. Please select at least one column to view the product list.
+            </Text>
+            <br />
+            <Button 
+              type="primary" 
+              onClick={resetToDefaultColumns}
+              style={{ marginTop: '16px' }}
+            >
+              Reset to Default Columns
+            </Button>
+          </div>
+        ) : (
+          <ClientOnlyTable
+            dataSource={filteredProductData}
+            columns={visibleProductColumns}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: (newSelectedRowKeys) => {
+                setSelectedRowKeys(newSelectedRowKeys);
+              },
+              preserveSelectedRowKeys: true,
+            }}
+            pagination={{
+              total: filteredProductData.length,
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+              pageSizeOptions: ['10', '20', '50', '100'],
+            }}
+            scroll={{ x: 1000 }}
+            rowKey="key"
+          />
+        )}
       </Card>
     </div>
   );

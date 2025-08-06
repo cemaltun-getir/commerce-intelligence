@@ -23,8 +23,7 @@ const IndexValueSchema: Schema = new Schema({
   value: {
     type: Number,
     required: true,
-    min: 0,
-    max: 100
+    min: 0
   },
   competitorId: {
     type: String,

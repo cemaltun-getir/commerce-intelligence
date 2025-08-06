@@ -115,7 +115,10 @@ export const exportProductMatches = (
     'KVI Type',
     'Index Value',
     'Getir Unit Price',
-    'Competitor Price'
+    'Competitor Price',
+    'Discounted',
+    'Struck Price (API)',
+    'Discount %'
   ];
 
   // Always include discount columns if any discount rates exist
@@ -136,7 +139,11 @@ export const exportProductMatches = (
       'KVI Type': item.kviType || '',
       'Index Value': item.ix || 0,
       'Getir Unit Price': item.getirUnitPrice || 0,
-      'Competitor Price': item.competitorPrice || 0
+      'Competitor Price': item.competitorPrice || 0,
+      'Discounted': item.isDiscounted ? 'Yes' : 'No',
+      'Struck Price (API)': item.struckPrice || '',
+      'Discount %': item.struckPrice && item.competitorPrice ? 
+        ((item.struckPrice - item.competitorPrice) / item.struckPrice * 100).toFixed(1) + '%' : ''
     };
 
     // Check if this specific product has a discount rate

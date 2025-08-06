@@ -47,6 +47,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { segmentId, kviType, value, competitorId, salesChannel } = body;
     
+    console.log('Received index value request:', { segmentId, kviType, value, competitorId, salesChannel });
+    
     // Validate required fields
     if (!segmentId || !kviType || value === undefined || !competitorId || !salesChannel) {
       return NextResponse.json(
@@ -56,9 +58,9 @@ export async function POST(request: NextRequest) {
     }
     
     // Validate value range
-    if (value < 0 || value > 100) {
+    if (value < 0) {
       return NextResponse.json(
-        { error: 'Value must be between 0 and 100' },
+        { error: 'Value must be greater than or equal to 0' },
         { status: 400 }
       );
     }
@@ -93,8 +95,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(formattedIndexValue, { status: 201 });
   } catch (error) {
     console.error('Error creating/updating index value:', error);
+    console.error('Request body:', body);
+    console.error('Error details:', error.message);
     return NextResponse.json(
-      { error: 'Failed to save index value' },
+      { error: 'Failed to save index value', details: error.message },
       { status: 500 }
     );
   }

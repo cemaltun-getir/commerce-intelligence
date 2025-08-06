@@ -12,6 +12,10 @@ export interface Product {
   sub_category_name: string;
   kvi_label: string;
   created_at: string;
+  // New buying price fields from SKU API
+  buying_price?: number;
+  buying_vat?: number;
+  buying_price_without_vat?: number;
 }
 
 export interface Competitor {
@@ -27,6 +31,8 @@ export interface CompetitorPrice {
   vendor_id: string;
   location_id: string;
   price: number;
+  struck_price: number | null;
+  is_discounted: boolean;
   unit_price: number;
   currency: string;
   created_at: string;
@@ -131,6 +137,7 @@ export interface ProductFilter {
   category?: string;
   subCategory?: string;
   competitor?: string;
+  discounted?: 'all' | 'discounted' | 'not-discounted';
   salesChannel?: 'getir' | 'getirbuyuk';
 }
 
