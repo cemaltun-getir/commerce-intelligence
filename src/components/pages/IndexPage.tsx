@@ -18,7 +18,11 @@ import {
   Checkbox,
   Space
 } from 'antd';
-import { EditOutlined, ExportOutlined, DownOutlined, CopyOutlined, CheckOutlined, ClearOutlined, SettingOutlined } from '@ant-design/icons';
+import { EditOutlined, ExportOutlined, DownOutlined, CopyOutlined, CheckOutlined, ClearOutlined, SettingOutlined, MenuOutlined } from '@ant-design/icons';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { exportProductMatches } from '@/utils/exportUtils';
 import { useAppStore } from '@/store/useAppStore';
 import ClientOnlyTable from '../common/ClientOnlyTable';
@@ -122,6 +126,14 @@ const IndexPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('');
   const [activeChannel, setActiveChannel] = useState('getir');
   
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+  
   // Filter states
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -140,10 +152,21 @@ const IndexPage: React.FC = () => {
 
   // Track if preferences have been loaded from localStorage
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+  
+  // Column order state
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    // Always start with default order to avoid hydration mismatch
+    const alwaysVisible = ALL_COLUMNS.filter(col => col.alwaysVisible).map(col => col.key);
+    const defaultVisible = ALL_COLUMNS.filter(col => col.defaultVisible && !col.alwaysVisible).map(col => col.key);
+    const others = ALL_COLUMNS.filter(col => !col.defaultVisible && !col.alwaysVisible).map(col => col.key);
+    
+    return [...alwaysVisible, ...defaultVisible, ...others];
+  });
 
   // Load saved preferences after component mounts (client-side only)
   useEffect(() => {
     try {
+      // Load column visibility preferences
       const savedColumns = localStorage.getItem('product-list-visible-columns');
       if (savedColumns) {
         const parsedColumns = JSON.parse(savedColumns);
@@ -151,8 +174,17 @@ const IndexPage: React.FC = () => {
           setVisibleColumns(new Set(parsedColumns));
         }
       }
+
+      // Load column order preferences
+      const savedOrder = localStorage.getItem('product-list-column-order');
+      if (savedOrder) {
+        const parsedOrder = JSON.parse(savedOrder);
+        if (Array.isArray(parsedOrder)) {
+          setColumnOrder(parsedOrder);
+        }
+      }
     } catch (error) {
-      console.warn('Failed to load column preferences from localStorage:', error);
+      console.warn('Failed to load preferences from localStorage:', error);
     } finally {
       setPreferencesLoaded(true);
     }
@@ -748,17 +780,132 @@ const IndexPage: React.FC = () => {
     }
   };
 
+  // Drag and drop handlers
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+
+    // Prevent moving always-visible columns
+    const activeColumn = ALL_COLUMNS.find(col => col.key === active.id);
+    const overColumn = ALL_COLUMNS.find(col => col.key === over.id);
+    
+    if (activeColumn?.alwaysVisible || overColumn?.alwaysVisible) {
+      return; // Don't allow moving always-visible columns
+    }
+
+    if (active.id !== over.id) {
+      setColumnOrder((items) => {
+        const oldIndex = items.indexOf(active.id);
+        const newIndex = items.indexOf(over.id);
+        const newOrder = arrayMove(items, oldIndex, newIndex);
+        
+        // Save to localStorage
+        try {
+          localStorage.setItem('product-list-column-order', JSON.stringify(newOrder));
+        } catch (error) {
+          console.warn('Failed to save column order to localStorage:', error);
+        }
+        
+        return newOrder;
+      });
+    }
+  };
+
+  const resetColumnOrder = () => {
+    const alwaysVisible = ALL_COLUMNS.filter(col => col.alwaysVisible).map(col => col.key);
+    const defaultVisible = ALL_COLUMNS.filter(col => col.defaultVisible && !col.alwaysVisible).map(col => col.key);
+    const others = ALL_COLUMNS.filter(col => !col.defaultVisible && !col.alwaysVisible).map(col => col.key);
+    
+    const defaultOrder = [...alwaysVisible, ...defaultVisible, ...others];
+    setColumnOrder(defaultOrder);
+    
+    // Save to localStorage
+    try {
+      localStorage.setItem('product-list-column-order', JSON.stringify(defaultOrder));
+    } catch (error) {
+      console.warn('Failed to save column order to localStorage:', error);
+    }
+  };
+
+  // Sortable column component
+  const SortableColumn = ({ columnKey, children }: { columnKey: string; children: React.ReactNode }) => {
+    const column = ALL_COLUMNS.find(col => col.key === columnKey);
+    const isAlwaysVisible = column?.alwaysVisible;
+    
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ 
+      id: columnKey,
+      disabled: isAlwaysVisible // Disable dragging for always-visible columns
+    });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+      <div ref={setNodeRef} style={style} {...(isAlwaysVisible ? {} : attributes)} {...(isAlwaysVisible ? {} : listeners)}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '4px', 
+          cursor: isAlwaysVisible ? 'default' : 'grab' 
+        }}>
+          {!isAlwaysVisible && <MenuOutlined style={{ fontSize: '12px', color: '#999' }} />}
+          {children}
+        </div>
+      </div>
+    );
+  };
+
   // Column selector dropdown items
   const columnSelectorItems = [
     {
       key: 'header',
       label: (
         <div style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0', marginBottom: '8px' }}>
-          <Text strong>Column Visibility</Text>
+          <Text strong>Column Settings</Text>
           <br />
           <Text type="secondary" style={{ fontSize: '12px' }}>
             {preferencesLoaded ? visibleColumns.size : ALL_COLUMNS.filter(col => col.defaultVisible).length} of {ALL_COLUMNS.length} columns visible
           </Text>
+        </div>
+      ),
+      disabled: true,
+    },
+    {
+      key: 'column-order-header',
+      label: (
+        <div style={{ padding: '4px 0', borderBottom: '1px solid #f0f0f0', marginBottom: '8px' }}>
+          <Text strong style={{ fontSize: '12px' }}>Column Order</Text>
+        </div>
+      ),
+      disabled: true,
+    },
+    {
+      key: 'reset-order',
+      label: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>Reset Column Order</span>
+          <Tag color="blue" style={{ fontSize: '11px', padding: '0 4px' }}>Default</Tag>
+        </div>
+      ),
+      onClick: resetColumnOrder,
+    },
+    {
+      type: 'divider' as const,
+    },
+    {
+      key: 'visibility-header',
+      label: (
+        <div style={{ padding: '4px 0', borderBottom: '1px solid #f0f0f0', marginBottom: '8px' }}>
+          <Text strong style={{ fontSize: '12px' }}>Column Visibility</Text>
         </div>
       ),
       disabled: true,
@@ -1182,10 +1329,20 @@ const IndexPage: React.FC = () => {
     },
   ];
 
-  // Filter columns based on visibility, ensuring always-visible columns are included
-  const visibleProductColumns = productColumns.filter(column => 
-    visibleColumns.has(column.key) || ALL_COLUMNS.find(col => col.key === column.key)?.alwaysVisible
-  );
+  // Filter and sort columns based on visibility and order
+  const visibleProductColumns = useMemo(() => {
+    // First filter visible columns
+    const filteredColumns = productColumns.filter(column => 
+      visibleColumns.has(column.key) || ALL_COLUMNS.find(col => col.key === column.key)?.alwaysVisible
+    );
+    
+    // Then sort by column order
+    return filteredColumns.sort((a, b) => {
+      const aIndex = columnOrder.indexOf(a.key);
+      const bIndex = columnOrder.indexOf(b.key);
+      return aIndex - bIndex;
+    });
+  }, [productColumns, visibleColumns, columnOrder]);
 
   return (
     <div style={{ padding: '24px' }}>
@@ -1392,27 +1549,45 @@ const IndexPage: React.FC = () => {
             </Button>
           </div>
         ) : (
-          <ClientOnlyTable
-            dataSource={filteredProductData}
-            columns={visibleProductColumns}
-            rowSelection={{
-              selectedRowKeys,
-              onChange: (newSelectedRowKeys) => {
-                setSelectedRowKeys(newSelectedRowKeys);
-              },
-              preserveSelectedRowKeys: true,
-            }}
-            pagination={{
-              total: filteredProductData.length,
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-              pageSizeOptions: ['10', '20', '50', '100'],
-            }}
-            scroll={{ x: 1000 }}
-            rowKey="key"
-          />
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={visibleProductColumns.map(col => col.key)}
+              strategy={verticalListSortingStrategy}
+            >
+              <ClientOnlyTable
+                dataSource={filteredProductData}
+                columns={visibleProductColumns.map(column => ({
+                  ...column,
+                  title: (
+                    <SortableColumn columnKey={column.key}>
+                      {column.title}
+                    </SortableColumn>
+                  ),
+                }))}
+                rowSelection={{
+                  selectedRowKeys,
+                  onChange: (newSelectedRowKeys) => {
+                    setSelectedRowKeys(newSelectedRowKeys);
+                  },
+                  preserveSelectedRowKeys: true,
+                }}
+                pagination={{
+                  total: filteredProductData.length,
+                  pageSize: 10,
+                  showSizeChanger: true,
+                  showQuickJumper: true,
+                  showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                }}
+                scroll={{ x: 1000 }}
+                rowKey="key"
+              />
+            </SortableContext>
+          </DndContext>
         )}
       </Card>
     </div>
