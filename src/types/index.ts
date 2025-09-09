@@ -75,9 +75,9 @@ export interface Warehouse {
   province: string;
   district: string;
   region: string;
-  demography: 'Upper Premium' | 'Premium';
-  size: 'Midi' | 'GB Maxi' | 'GB Midi';
-  domain: 'Getir' | 'Getir Büyük';
+  demography: 'Upper Premium' | 'Premium' | 'Upper Medium' | 'Medium' | 'Lower Medium' | 'Mass';
+  size: 'Micro' | 'Mini' | 'Midi' | 'Maxi' | 'GB Midi' | 'GB Maxi';
+  domain: 'Getir' | 'Getir Büyük' | 'Getir Express' | 'Getir Market';
 }
 
 // Segmentation types

@@ -5,9 +5,9 @@ export interface IWarehouse extends Document {
   province: string;
   district: string;
   region: string;
-  demography: 'Urban' | 'Suburban' | 'Rural';
-  size: 'Small' | 'Medium' | 'Large' | 'XLarge';
-  domain: 'Getir10' | 'Getir30';
+  demography: 'Upper Premium' | 'Premium' | 'Upper Medium' | 'Medium' | 'Lower Medium' | 'Mass';
+  size: 'Micro' | 'Mini' | 'Midi' | 'Maxi' | 'GB Midi' | 'GB Maxi';
+  domain: 'Getir' | 'Getir Büyük' | 'Getir Express' | 'Getir Market';
 }
 
 const WarehouseSchema: Schema = new Schema({
@@ -34,17 +34,17 @@ const WarehouseSchema: Schema = new Schema({
   demography: {
     type: String,
     required: true,
-    enum: ['Urban', 'Suburban', 'Rural']
+    enum: ['Upper Premium', 'Premium', 'Upper Medium', 'Medium', 'Lower Medium', 'Mass']
   },
   size: {
     type: String,
     required: true,
-    enum: ['Small', 'Medium', 'Large', 'XLarge']
+    enum: ['Micro', 'Mini', 'Midi', 'Maxi', 'GB Midi', 'GB Maxi']
   },
   domain: {
     type: String,
     required: true,
-    enum: ['Getir10', 'Getir30']
+    enum: ['Getir', 'Getir Büyük', 'Getir Express', 'Getir Market']
   }
 }, {
   timestamps: true

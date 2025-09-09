@@ -5,24 +5,18 @@ import {
   Table,
   Button,
   Space,
-  Modal,
-  Form,
-  Input,
-  Transfer,
-  Select,
   Tag,
   Row,
   Col,
-  Divider,
   Typography,
-  Card,
-  Statistic,
   Tooltip,
   Popconfirm,
   Checkbox,
   Dropdown,
   Menu,
-  App
+  App,
+  Input,
+  Select
 } from 'antd';
 import {
   PlusOutlined,
@@ -38,17 +32,11 @@ import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { Segment, Warehouse, PriceLocation } from '@/types';
+import { getDomainColor, getPriceLocationColor } from '@/utils/badgeColors';
 import ClientOnlyTable from '../common/ClientOnlyTable';
 
-const { Option } = Select;
 const { Title, Text } = Typography;
-
-interface TransferItem {
-  key: string;
-  title: string;
-  description: string;
-  chosen: boolean;
-}
+const { Option } = Select;
 
 const SegmentationPage: React.FC = () => {
   const { message } = App.useApp();
@@ -65,15 +53,6 @@ const SegmentationPage: React.FC = () => {
     deleteSegment
   } = useAppStore();
 
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [selectedWarehouses, setSelectedWarehouses] = useState<React.Key[]>([]);
-  const [warehouseFilter, setWarehouseFilter] = useState({
-    domain: '',
-    region: '',
-    province: '',
-    size: '',
-    demography: ''
-  });
   const [filters, setFilters] = useState({
     search: '',
     province: '',
@@ -82,7 +61,6 @@ const SegmentationPage: React.FC = () => {
     domain: ''
   });
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [form] = Form.useForm();
 
   useEffect(() => {
     fetchSegments();
@@ -94,12 +72,11 @@ const SegmentationPage: React.FC = () => {
   const filteredData = useMemo(() => {
     let filtered = [...segments];
 
-    // Search filter (name, domains, or ID)
+    // Search filter (name or ID)
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
       filtered = filtered.filter((item: Segment) =>
         item.name.toLowerCase().includes(searchLower) ||
-        item.domains?.some(domain => domain.toLowerCase().includes(searchLower)) ||
         item.id.toLowerCase().includes(searchLower)
       );
     }
@@ -177,12 +154,12 @@ const SegmentationPage: React.FC = () => {
         <Space wrap>
           {domains && domains.length > 0 ? (
             domains.map((domain, index) => (
-                              <Tag key={index} color={domain === 'Getir' ? 'green' : 'blue'}>
+              <Tag key={index} color={getDomainColor(domain)}>
                 {domain}
               </Tag>
             ))
           ) : (
-            <Tag color="default">No Domain</Tag>
+            <Tag color={getDomainColor(undefined)}>No Domain</Tag>
           )}
         </Space>
       ),
@@ -212,14 +189,14 @@ const SegmentationPage: React.FC = () => {
               render: (priceLocation: string) => {
           if (!priceLocation) {
             return (
-              <Tag color="red" style={{ fontSize: '11px' }}>
+              <Tag color={getPriceLocationColor(undefined)} style={{ fontSize: '11px' }}>
                 ⚠️ Not Set
               </Tag>
             );
           }
           const location = priceLocations.find(loc => loc.id === priceLocation);
           return (
-            <Tag color="blue" style={{ fontSize: '11px' }}>
+            <Tag color={getPriceLocationColor(priceLocation)} style={{ fontSize: '11px' }}>
               {location?.name || priceLocation}
             </Tag>
           );
@@ -294,125 +271,9 @@ const SegmentationPage: React.FC = () => {
   };
 
   const handleAddSegment = () => {
-    setIsModalVisible(true);
+    router.push('/pricing/segmentation/new');
   };
 
-  const handleModalOk = async () => {
-    try {
-      const values = await form.validateFields();
-      
-      // Validate that at least one warehouse is selected
-      if (selectedWarehouses.length === 0) {
-        message.error('Please select at least one warehouse for the segment');
-        return;
-      }
-      
-      // Validate price location is selected
-      if (!values.priceLocation) {
-        message.error('Please select a price location for the segment');
-        return;
-      }
-
-      await addSegment({
-        name: values.name,
-        warehouseIds: selectedWarehouses as string[],
-        priceLocation: values.priceLocation
-      });
-      message.success('Segment added successfully');
-      setIsModalVisible(false);
-      setSelectedWarehouses([]);
-      form.resetFields();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to add segment';
-      message.error(errorMessage);
-    }
-  };
-
-  const handleModalCancel = () => {
-    setIsModalVisible(false);
-    setSelectedWarehouses([]);
-    form.resetFields();
-  };
-
-  // Warehouse selection handlers
-  const handleWarehouseSelection = (targetKeys: React.Key[]) => {
-    setSelectedWarehouses(targetKeys as string[]);
-  };
-
-  // Get available warehouses (not assigned to any segment)
-  const getAvailableWarehouses = (): Warehouse[] => {
-    const allAssignedWarehouseIds = segments.flatMap(seg => seg.warehouseIds || []);
-    return warehouses.filter(warehouse => 
-      !allAssignedWarehouseIds.includes(warehouse.id)
-    );
-  };
-
-  const getWarehouseTransferData = (): TransferItem[] => {
-    const availableWarehouses = getAvailableWarehouses();
-    return availableWarehouses.map(warehouse => ({
-      key: warehouse.id,
-      title: warehouse.name,
-      description: `${warehouse.province}, ${warehouse.district} - ${warehouse.domain}`,
-      chosen: selectedWarehouses.includes(warehouse.id)
-    }));
-  };
-
-  const renderWarehouseItem = (item: TransferItem) => {
-    const availableWarehouses = getAvailableWarehouses();
-    const warehouse = availableWarehouses.find(w => w.id === item.key);
-    if (!warehouse) return item.title;
-    
-    return {
-      label: (
-        <div style={{ 
-          padding: '8px 0', 
-          borderBottom: '1px solid #f0f0f0',
-          width: '100%'
-        }}>
-          <div style={{ 
-            fontWeight: 500, 
-            fontSize: '14px',
-            marginBottom: '4px',
-            color: '#262626'
-          }}>
-            {warehouse.name}
-          </div>
-          <div style={{ 
-            fontSize: '12px', 
-            color: '#8c8c8c',
-            marginBottom: '6px'
-          }}>
-            📍 {warehouse.province}, {warehouse.district}
-          </div>
-          <div style={{ 
-            display: 'flex', 
-            gap: '4px',
-            flexWrap: 'wrap'
-          }}>
-            <Tag 
-                              color={warehouse.domain === 'Getir' ? 'blue' : 'green'} 
-              style={{ fontSize: '11px', margin: '0 2px 2px 0' }}
-            >
-              {warehouse.domain}
-            </Tag>
-            <Tag 
-              color="orange" 
-              style={{ fontSize: '11px', margin: '0 2px 2px 0' }}
-            >
-              {warehouse.size}
-            </Tag>
-            <Tag 
-              color="purple" 
-              style={{ fontSize: '11px', margin: '0 2px 2px 0' }}
-            >
-              {warehouse.demography}
-            </Tag>
-          </div>
-        </div>
-      ),
-      value: warehouse.id
-    };
-  };
 
   const handleDeleteSegment = async (id: string) => {
     try {
@@ -469,7 +330,7 @@ const SegmentationPage: React.FC = () => {
       <Row gutter={16} style={{ marginBottom: '16px' }}>
         <Col span={6}>
           <Input
-            placeholder="Search by name, domain, or ID"
+            placeholder="Search by name or ID"
             prefix={<SearchOutlined />}
             value={filters.search}
             onChange={e => handleSearch(e.target.value)}
@@ -614,240 +475,6 @@ const SegmentationPage: React.FC = () => {
         rowKey="id"
       />
 
-      {/* Add Segment Modal */}
-      <Modal
-        title="Add New Segment"
-        open={isModalVisible}
-        onOk={handleModalOk}
-        onCancel={handleModalCancel}
-        okText="Create"
-        cancelText="Cancel"
-        okButtonProps={{ style: { background: '#7C3AED' } }}
-        width={800}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          style={{ marginTop: '20px' }}
-        >
-          <Form.Item
-            name="name"
-            label="Segment Name"
-            rules={[{ required: true, message: 'Please enter segment name' }]}
-          >
-            <Input placeholder="Enter segment name" />
-          </Form.Item>
-
-          <Form.Item
-            name="priceLocation"
-            label="Price Location"
-            rules={[{ required: true, message: 'Please select a price location' }]}
-            tooltip="Select the location where competitor prices will be fetched from"
-          >
-            <Select placeholder="Select price location for pricing data">
-              {priceLocations.map(location => (
-                <Option key={location.id} value={location.id}>
-                  {location.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-          
-          <Divider>Warehouse Selection</Divider>
-          
-          <div style={{ marginBottom: '16px' }}>
-            <Row gutter={16} style={{ marginBottom: '8px' }}>
-              <Col span={8}>
-                <Select
-                  placeholder="Filter by Domain"
-                  style={{ width: '100%' }}
-                  value={warehouseFilter.domain || undefined}
-                  onChange={(value) => setWarehouseFilter(prev => ({ ...prev, domain: value || '' }))}
-                  allowClear
-                >
-                  <Option value="Getir">Getir</Option>
-                  <Option value="Getir Büyük">Getir Büyük</Option>
-                </Select>
-              </Col>
-              <Col span={8}>
-                <Select
-                  placeholder="Filter by Region"
-                  style={{ width: '100%' }}
-                  value={warehouseFilter.region || undefined}
-                  onChange={(value) => setWarehouseFilter(prev => ({ ...prev, region: value || '' }))}
-                  allowClear
-                >
-                  {[...new Set(getAvailableWarehouses().map(w => w.region))].map(region => (
-                    <Option key={region} value={region}>{region}</Option>
-                  ))}
-                </Select>
-              </Col>
-              <Col span={8}>
-                <Select
-                  placeholder="Filter by Province"
-                  style={{ width: '100%' }}
-                  value={warehouseFilter.province || undefined}
-                  onChange={(value) => setWarehouseFilter(prev => ({ ...prev, province: value || '' }))}
-                  allowClear
-                >
-                  {[...new Set(getAvailableWarehouses().map(w => w.province))].map(province => (
-                    <Option key={province} value={province}>{province}</Option>
-                  ))}
-                </Select>
-              </Col>
-            </Row>
-            <Row gutter={16}>
-              <Col span={8}>
-                <Select
-                  placeholder="Filter by Size"
-                  style={{ width: '100%' }}
-                  value={warehouseFilter.size || undefined}
-                  onChange={(value) => setWarehouseFilter(prev => ({ ...prev, size: value || '' }))}
-                  allowClear
-                >
-                  <Option value="Small">Small</Option>
-                  <Option value="Medium">Medium</Option>
-                  <Option value="Large">Large</Option>
-                  <Option value="XLarge">XLarge</Option>
-                </Select>
-              </Col>
-              <Col span={8}>
-                <Select
-                  placeholder="Filter by Demography"
-                  style={{ width: '100%' }}
-                  value={warehouseFilter.demography || undefined}
-                  onChange={(value) => setWarehouseFilter(prev => ({ ...prev, demography: value || '' }))}
-                  allowClear
-                >
-                  <Option value="Urban">Urban</Option>
-                  <Option value="Suburban">Suburban</Option>
-                  <Option value="Rural">Rural</Option>
-                </Select>
-              </Col>
-            </Row>
-          </div>
-
-          {(() => {
-            const filteredData = getWarehouseTransferData().filter(item => {
-              const availableWarehouses = getAvailableWarehouses();
-              const warehouse = availableWarehouses.find(w => w.id === item.key);
-              if (!warehouse) return false;
-              
-              return (!warehouseFilter.domain || warehouse.domain === warehouseFilter.domain) &&
-                     (!warehouseFilter.region || warehouse.region === warehouseFilter.region) &&
-                     (!warehouseFilter.province || warehouse.province === warehouseFilter.province) &&
-                     (!warehouseFilter.size || warehouse.size === warehouseFilter.size) &&
-                     (!warehouseFilter.demography || warehouse.demography === warehouseFilter.demography);
-            });
-            
-            return (
-              <Transfer
-                dataSource={filteredData}
-                targetKeys={selectedWarehouses}
-                onChange={handleWarehouseSelection}
-                render={renderWarehouseItem}
-                titles={[
-                  <span key="available" style={{ fontWeight: 600, fontSize: '14px' }}>
-                    📦 Available Warehouses
-                  </span>, 
-                  <span key="selected" style={{ fontWeight: 600, fontSize: '14px' }}>
-                    ✅ Selected Warehouses
-                  </span>
-                ]}
-                listStyle={{
-                  width: 380,
-                  height: 400,
-                  border: '1px solid #d9d9d9',
-                  borderRadius: '6px'
-                }}
-                oneWay
-                pagination={{
-                  pageSize: 5,
-                  simple: true
-                }}
-                showSearch
-              />
-            );
-          })()}
-          
-          {selectedWarehouses.length > 0 && (
-            <div style={{ marginTop: '20px' }}>
-              <Title level={5} style={{ marginBottom: '12px', color: '#262626' }}>
-                📊 Segment Preview
-              </Title>
-              <Card 
-                size="small" 
-                style={{ 
-                  background: '#fafafa',
-                  border: '1px solid #e6f7ff'
-                }}
-              >
-                <Row gutter={[16, 12]}>
-                  <Col span={6}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#1890ff' }}>
-                        {selectedWarehouses.length}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>Warehouses</div>
-                    </div>
-                  </Col>
-                  <Col span={6}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#52c41a' }}>
-                        {[...new Set(warehouses
-                          .filter(w => selectedWarehouses.includes(w.id))
-                          .map(w => w.domain)
-                        )].length}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>Domains</div>
-                    </div>
-                  </Col>
-                  <Col span={6}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#fa8c16' }}>
-                        {[...new Set(warehouses
-                          .filter(w => selectedWarehouses.includes(w.id))
-                          .map(w => w.province)
-                        )].length}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>Provinces</div>
-                    </div>
-                  </Col>
-                  <Col span={6}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#722ed1' }}>
-                        {[...new Set(warehouses
-                          .filter(w => selectedWarehouses.includes(w.id))
-                          .map(w => w.district)
-                        )].length}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>Districts</div>
-                    </div>
-                  </Col>
-                </Row>
-                
-                <Divider style={{ margin: '12px 0' }} />
-                
-                <Row gutter={[8, 8]}>
-                  <Col span={24}>
-                    <Text strong style={{ fontSize: '12px', color: '#666' }}>DOMAINS:</Text>
-                    <div style={{ marginTop: '4px' }}>
-                      {[...new Set(warehouses
-                        .filter(w => selectedWarehouses.includes(w.id))
-                        .map(w => w.domain)
-                      )].map(domain => (
-                        <Tag key={domain} color={domain === 'Getir' ? 'blue' : 'green'} style={{ margin: '2px' }}>
-                          {domain}
-                        </Tag>
-                      ))}
-                    </div>
-                  </Col>
-                </Row>
-              </Card>
-            </div>
-          )}
-        </Form>
-      </Modal>
     </div>
   );
 };
