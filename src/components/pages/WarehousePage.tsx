@@ -127,15 +127,23 @@ const WarehousePage: React.FC = () => {
       title: 'Domain',
       dataIndex: 'domain',
       key: 'domain',
-      render: (domain: string) => (
-        <Tag color={domain === 'Getir10' ? 'blue' : 'green'}>
-          {domain}
-        </Tag>
-      ),
-      filters: [
-        { text: 'Getir10', value: 'Getir10' },
-        { text: 'Getir30', value: 'Getir30' }
-      ],
+      render: (domain: string) => {
+        const colorMap: Record<string, string> = {
+          'Getir': 'blue',
+          'Getir Büyük': 'green',
+          'Getir Express': 'orange',
+          'Getir Market': 'purple'
+        };
+        return (
+          <Tag color={colorMap[domain] || 'default'}>
+            {domain}
+          </Tag>
+        );
+      },
+      filters: [...new Set(warehouses.map(w => w.domain))].map(domain => ({
+        text: domain,
+        value: domain
+      })),
       onFilter: (value, record) => record.domain === value
     },
     {
@@ -143,24 +151,24 @@ const WarehousePage: React.FC = () => {
       dataIndex: 'size',
       key: 'size',
       render: (size: string) => {
-        const colorMap = {
-          'Small': 'default',
-          'Medium': 'blue',
-          'Large': 'orange',
-          'XLarge': 'red'
+        const colorMap: Record<string, string> = {
+          'Micro': 'default',
+          'Mini': 'blue',
+          'Midi': 'green',
+          'Maxi': 'orange',
+          'GB Midi': 'purple',
+          'GB Maxi': 'red'
         };
         return (
-          <Tag color={colorMap[size as keyof typeof colorMap] || 'default'}>
+          <Tag color={colorMap[size] || 'default'}>
             {size}
           </Tag>
         );
       },
-      filters: [
-        { text: 'Small', value: 'Small' },
-        { text: 'Medium', value: 'Medium' },
-        { text: 'Large', value: 'Large' },
-        { text: 'XLarge', value: 'XLarge' }
-      ],
+      filters: [...new Set(warehouses.map(w => w.size))].map(size => ({
+        text: size,
+        value: size
+      })),
       onFilter: (value, record) => record.size === value
     },
     {
@@ -170,11 +178,10 @@ const WarehousePage: React.FC = () => {
       render: (demography: string) => (
         <Tag color="purple">{demography}</Tag>
       ),
-      filters: [
-        { text: 'Urban', value: 'Urban' },
-        { text: 'Suburban', value: 'Suburban' },
-        { text: 'Rural', value: 'Rural' }
-      ],
+      filters: [...new Set(warehouses.map(w => w.demography))].map(demography => ({
+        text: demography,
+        value: demography
+      })),
       onFilter: (value, record) => record.demography === value
     },
     {
@@ -228,9 +235,9 @@ const WarehousePage: React.FC = () => {
           <Card>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#52c41a' }}>
-                {warehouses.filter(w => w.domain === 'Getir10').length}
+                {warehouses.filter(w => w.domain === 'Getir').length}
               </div>
-              <div style={{ color: '#666' }}>Getir10</div>
+              <div style={{ color: '#666' }}>Getir</div>
             </div>
           </Card>
         </Col>
@@ -238,9 +245,9 @@ const WarehousePage: React.FC = () => {
           <Card>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#fa8c16' }}>
-                {warehouses.filter(w => w.domain === 'Getir30').length}
+                {warehouses.filter(w => w.domain === 'Getir Büyük').length}
               </div>
-              <div style={{ color: '#666' }}>Getir30</div>
+              <div style={{ color: '#666' }}>Getir Büyük</div>
             </div>
           </Card>
         </Col>
@@ -306,8 +313,9 @@ const WarehousePage: React.FC = () => {
               onChange={handleDomainChange}
               allowClear
             >
-              <Option value="Getir10">Getir10</Option>
-              <Option value="Getir30">Getir30</Option>
+              {[...new Set(warehouses.map(w => w.domain))].map(domain => (
+                <Option key={domain} value={domain}>{domain}</Option>
+              ))}
             </Select>
           </Col>
           <Col span={3}>
@@ -318,9 +326,9 @@ const WarehousePage: React.FC = () => {
               onChange={handleDemographyChange}
               allowClear
             >
-              <Option value="Urban">Urban</Option>
-              <Option value="Suburban">Suburban</Option>
-              <Option value="Rural">Rural</Option>
+              {[...new Set(warehouses.map(w => w.demography))].map(demography => (
+                <Option key={demography} value={demography}>{demography}</Option>
+              ))}
             </Select>
           </Col>
           <Col span={3}>
@@ -331,10 +339,9 @@ const WarehousePage: React.FC = () => {
               onChange={handleSizeChange}
               allowClear
             >
-              <Option value="Small">Small</Option>
-              <Option value="Medium">Medium</Option>
-              <Option value="Large">Large</Option>
-              <Option value="XLarge">XLarge</Option>
+              {[...new Set(warehouses.map(w => w.size))].map(size => (
+                <Option key={size} value={size}>{size}</Option>
+              ))}
             </Select>
           </Col>
           <Col span={5}>
