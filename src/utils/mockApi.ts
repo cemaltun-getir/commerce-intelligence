@@ -68,7 +68,7 @@ export const mockWarehouses: Warehouse[] = [
     province: 'Istanbul',
     district: 'Kadikoy',
     region: 'Marmara',
-    demography: 'Urban',
+    demography: 'Premium',
     size: 'Large',
     domain: 'Getir10'
   },
@@ -78,7 +78,7 @@ export const mockWarehouses: Warehouse[] = [
     province: 'Istanbul',
     district: 'Sisli',
     region: 'Marmara',
-    demography: 'Urban',
+    demography: 'Premium',
     size: 'Medium',
     domain: 'Getir10'
   },
@@ -88,7 +88,7 @@ export const mockWarehouses: Warehouse[] = [
     province: 'Ankara',
     district: 'Cankaya',
     region: 'Central Anatolia',
-    demography: 'Urban',
+    demography: 'Premium',
     size: 'Medium',
     domain: 'Getir30'
   },
@@ -98,7 +98,7 @@ export const mockWarehouses: Warehouse[] = [
     province: 'Izmir',
     district: 'Konak',
     region: 'Aegean',
-    demography: 'Urban',
+    demography: 'Premium',
     size: 'Large',
     domain: 'Getir10'
   },
@@ -118,7 +118,7 @@ export const mockWarehouses: Warehouse[] = [
     province: 'Antalya',
     district: 'Kepez',
     region: 'Mediterranean',
-    demography: 'Urban',
+    demography: 'Premium',
     size: 'Medium',
     domain: 'Getir10'
   },
@@ -128,7 +128,7 @@ export const mockWarehouses: Warehouse[] = [
     province: 'Adana',
     district: 'Seyhan',
     region: 'Mediterranean',
-    demography: 'Urban',
+    demography: 'Premium',
     size: 'Large',
     domain: 'Getir30'
   },
@@ -158,7 +158,7 @@ export const mockWarehouses: Warehouse[] = [
     province: 'Mersin',
     district: 'Akdeniz',
     region: 'Mediterranean',
-    demography: 'Urban',
+    demography: 'Premium',
     size: 'XLarge',
     domain: 'Getir10'
   },
@@ -178,7 +178,7 @@ export const mockWarehouses: Warehouse[] = [
     province: 'Trabzon',
     district: 'Ortahisar',
     region: 'Black Sea',
-    demography: 'Urban',
+    demography: 'Premium',
     size: 'Medium',
     domain: 'Getir10'
   }
