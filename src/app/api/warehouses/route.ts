@@ -3,7 +3,9 @@ import connectDB from '@/lib/mongodb';
 import Warehouse from '@/models/Warehouse';
 import { Warehouse as WarehouseType } from '@/types';
 
-// GET /api/warehouses - Get all warehouses with optional filters
+// GET /api/warehouses - Get all warehouses from external API (read-only)
+// Note: This fetches live warehouse data from the external price tracker API
+// For admin operations (create/update/delete), use the POST/PUT/DELETE endpoints
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -13,7 +15,7 @@ export async function GET(request: NextRequest) {
     const demography = searchParams.get('demography');
     const size = searchParams.get('size');
 
-    // Fetch data from external API
+    // Fetch live warehouse data from external API
     const externalApiBase = process.env.EXTERNAL_API_BASE_URL || 'http://localhost:3001/api/external';
     const response = await fetch(`${externalApiBase}/locations`);
     
@@ -56,7 +58,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/warehouses - Create new warehouse (for admin purposes)
+// POST /api/warehouses - Create new warehouse in local database (admin only)
+// Note: This creates a warehouse record in our local MongoDB database
+// The main warehouse data still comes from external API via GET endpoint
 export async function POST(request: NextRequest) {
   try {
     await connectDB();

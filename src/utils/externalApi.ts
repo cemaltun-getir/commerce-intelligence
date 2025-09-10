@@ -3,35 +3,51 @@ import { Product, Competitor, CompetitorPrice, Category, SubCategory } from '@/t
 const EXTERNAL_API_BASE = process.env.EXTERNAL_API_BASE_URL || 'http://localhost:3001/api/external';
 
 export const externalApi = {
-  // Get all products (SKUs)
+  // Get all products (SKUs) - now uses our internal API route
   async getProducts(): Promise<Product[]> {
     try {
-      const response = await fetch(`${EXTERNAL_API_BASE}/skus`);
+      const response = await fetch('/api/products');
       
       if (!response.ok) {
-        throw new Error(`External API responded with status: ${response.status}`);
+        throw new Error(`Products API responded with status: ${response.status}`);
       }
       
       return response.json();
     } catch (error) {
-      console.error('Error fetching products from external API:', error);
+      console.error('Error fetching products:', error);
       throw new Error('Failed to fetch products');
     }
   },
 
-  // Get all vendors (competitors)
+  // Get all vendors (competitors) - now uses our internal API route
   async getVendors(): Promise<Competitor[]> {
     try {
-      const response = await fetch(`${EXTERNAL_API_BASE}/vendors`);
+      const response = await fetch('/api/competitors');
       
       if (!response.ok) {
-        throw new Error(`External API responded with status: ${response.status}`);
+        throw new Error(`Competitors API responded with status: ${response.status}`);
       }
       
       return response.json();
     } catch (error) {
-      console.error('Error fetching vendors from external API:', error);
-      throw new Error('Failed to fetch vendors');
+      console.error('Error fetching competitors:', error);
+      throw new Error('Failed to fetch competitors');
+    }
+  },
+
+  // Get all categories - now uses our internal API route
+  async getCategories(): Promise<Category[]> {
+    try {
+      const response = await fetch('/api/categories');
+      
+      if (!response.ok) {
+        throw new Error(`Categories API responded with status: ${response.status}`);
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      throw new Error('Failed to fetch categories');
     }
   },
 
