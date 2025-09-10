@@ -12,9 +12,9 @@ import {
 
 // Mock data
 export const mockCompetitors: Competitor[] = [
-  { id: 'migros', name: 'migros', displayName: 'Migros' },
-  { id: 'carrefour', name: 'carrefour', displayName: 'Carrefour' },
-  { id: 'sok', name: 'sok', displayName: 'ŞOK' },
+  { id: 'migros', name: 'migros', created_at: '2024-01-01T00:00:00Z' },
+  { id: 'carrefour', name: 'carrefour', created_at: '2024-01-01T00:00:00Z' },
+  { id: 'sok', name: 'sok', created_at: '2024-01-01T00:00:00Z' },
 ];
 
 // Mock API locations where competitor pricing data is available
