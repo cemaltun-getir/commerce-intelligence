@@ -97,9 +97,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating/updating index value:', error);
     console.error('Request body:', body);
-    console.error('Error details:', error.message);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error details:', errorMessage);
     return NextResponse.json(
-      { error: 'Failed to save index value', details: error.message },
+      { error: 'Failed to save index value', details: errorMessage },
       { status: 500 }
     );
   }
