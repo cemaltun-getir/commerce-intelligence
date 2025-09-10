@@ -79,7 +79,7 @@ export const mockWarehouses: Warehouse[] = [
     district: 'Sisli',
     region: 'Marmara',
     demography: 'Premium',
-    size: 'Medium',
+    size: 'Midi',
     domain: 'Getir'
   },
   {
@@ -89,7 +89,7 @@ export const mockWarehouses: Warehouse[] = [
     district: 'Cankaya',
     region: 'Central Anatolia',
     demography: 'Premium',
-    size: 'Medium',
+    size: 'Midi',
     domain: 'Getir30'
   },
   {
@@ -109,7 +109,7 @@ export const mockWarehouses: Warehouse[] = [
     district: 'Nilufer',
     region: 'Marmara',
     demography: 'Suburban',
-    size: 'Small',
+    size: 'Mini',
     domain: 'Getir30'
   },
   {
@@ -119,7 +119,7 @@ export const mockWarehouses: Warehouse[] = [
     district: 'Kepez',
     region: 'Mediterranean',
     demography: 'Premium',
-    size: 'Medium',
+    size: 'Midi',
     domain: 'Getir'
   },
   {
@@ -139,7 +139,7 @@ export const mockWarehouses: Warehouse[] = [
     district: 'Sahinbey',
     region: 'Southeastern Anatolia',
     demography: 'Suburban',
-    size: 'Medium',
+    size: 'Midi',
     domain: 'Getir'
   },
   {
@@ -149,7 +149,7 @@ export const mockWarehouses: Warehouse[] = [
     district: 'Izmit',
     region: 'Marmara',
     demography: 'Suburban',
-    size: 'Small',
+    size: 'Mini',
     domain: 'Getir30'
   },
   {
@@ -169,7 +169,7 @@ export const mockWarehouses: Warehouse[] = [
     district: 'Tepebasi',
     region: 'Central Anatolia',
     demography: 'Suburban',
-    size: 'Small',
+    size: 'Mini',
     domain: 'Getir30'
   },
   {
@@ -179,7 +179,7 @@ export const mockWarehouses: Warehouse[] = [
     district: 'Ortahisar',
     region: 'Black Sea',
     demography: 'Premium',
-    size: 'Medium',
+    size: 'Midi',
     domain: 'Getir'
   }
 ];
