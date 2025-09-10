@@ -41,10 +41,11 @@ export async function GET(request: NextRequest) {
 
 // POST new index value or update existing
 export async function POST(request: NextRequest) {
+  let body: any;
   try {
     await connectToDatabase();
     
-    const body = await request.json();
+    body = await request.json();
     const { segmentId, kviType, value, competitorId, salesChannel } = body;
     
     console.log('Received index value request:', { segmentId, kviType, value, competitorId, salesChannel });
