@@ -59,22 +59,32 @@ export async function GET(request: NextRequest) {
 // POST /api/warehouses - Create new warehouse (for admin purposes)
 export async function POST(request: NextRequest) {
   try {
-    // Temporarily disabled MongoDB connection for production
-    // await connectDB();
+    await connectDB();
     const body = await request.json();
     
-    // For now, return a mock response since we don't have MongoDB set up
-    const mockWarehouse = {
-      id: `mock_${Date.now()}`,
+    const warehouse = new Warehouse({
       name: body.name,
       province: body.province,
       district: body.district,
       demography: body.demography,
       size: body.size,
       domain: body.domain
+    });
+    
+    const savedWarehouse = await warehouse.save();
+    
+    // Transform to match frontend interface
+    const transformedWarehouse = {
+      id: savedWarehouse._id.toString(),
+      name: savedWarehouse.name,
+      province: savedWarehouse.province,
+      district: savedWarehouse.district,
+      demography: savedWarehouse.demography,
+      size: savedWarehouse.size,
+      domain: savedWarehouse.domain
     };
     
-    return NextResponse.json(mockWarehouse, { status: 201 });
+    return NextResponse.json(transformedWarehouse, { status: 201 });
   } catch (error) {
     console.error('Error creating warehouse:', error);
     return NextResponse.json(
