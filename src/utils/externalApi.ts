@@ -3,55 +3,55 @@ import { Product, Competitor, CompetitorPrice, Category, SubCategory } from '@/t
 const EXTERNAL_API_BASE = process.env.EXTERNAL_API_BASE_URL || 'http://localhost:3001/api/external';
 
 export const externalApi = {
-  // Get all products (SKUs) - now uses our internal API route
+  // Get all products (SKUs) - directly from external API
   async getProducts(): Promise<Product[]> {
     try {
-      const response = await fetch('/api/products');
+      const response = await fetch(`${EXTERNAL_API_BASE}/skus`);
       
       if (!response.ok) {
-        throw new Error(`Products API responded with status: ${response.status}`);
+        throw new Error(`External API responded with status: ${response.status}`);
       }
       
       return response.json();
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('Error fetching products from external API:', error);
       throw new Error('Failed to fetch products');
     }
   },
 
-  // Get all vendors (competitors) - now uses our internal API route
+  // Get all vendors (competitors) - directly from external API
   async getVendors(): Promise<Competitor[]> {
     try {
-      const response = await fetch('/api/competitors');
+      const response = await fetch(`${EXTERNAL_API_BASE}/vendors`);
       
       if (!response.ok) {
-        throw new Error(`Competitors API responded with status: ${response.status}`);
+        throw new Error(`External API responded with status: ${response.status}`);
       }
       
       return response.json();
     } catch (error) {
-      console.error('Error fetching competitors:', error);
-      throw new Error('Failed to fetch competitors');
+      console.error('Error fetching vendors from external API:', error);
+      throw new Error('Failed to fetch vendors');
     }
   },
 
-  // Get all categories - now uses our internal API route
+  // Get all categories - directly from external API
   async getCategories(): Promise<Category[]> {
     try {
-      const response = await fetch('/api/categories');
+      const response = await fetch(`${EXTERNAL_API_BASE}/categories`);
       
       if (!response.ok) {
-        throw new Error(`Categories API responded with status: ${response.status}`);
+        throw new Error(`External API responded with status: ${response.status}`);
       }
       
       return response.json();
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error('Error fetching categories from external API:', error);
       throw new Error('Failed to fetch categories');
     }
   },
 
-  // Get all price mappings
+  // Get all price mappings - directly from external API
   async getPriceMappings(): Promise<CompetitorPrice[]> {
     try {
       const response = await fetch(`${EXTERNAL_API_BASE}/price-mappings`);
@@ -67,7 +67,7 @@ export const externalApi = {
     }
   },
 
-  // Get all sub-categories
+  // Get all sub-categories - directly from external API
   async getSubCategories(): Promise<SubCategory[]> {
     try {
       const response = await fetch(`${EXTERNAL_API_BASE}/sub-categories`);
@@ -83,7 +83,7 @@ export const externalApi = {
     }
   },
 
-  // Get price mappings by filters
+  // Get price mappings by filters - directly from external API
   async getPriceMappingsByFilters(filters: {
     sku_id?: string;
     vendor_id?: string;
@@ -103,8 +103,8 @@ export const externalApi = {
       
       return response.json();
     } catch (error) {
-      console.error('Error fetching price mappings from external API:', error);
-      throw new Error('Failed to fetch price mappings');
+      console.error('Error fetching price mappings by filters from external API:', error);
+      throw new Error('Failed to fetch price mappings by filters');
     }
   }
 }; 
