@@ -67,22 +67,6 @@ export const externalApi = {
     }
   },
 
-  // Get all categories
-  async getCategories(): Promise<Category[]> {
-    try {
-      const response = await fetch(`${EXTERNAL_API_BASE}/categories`);
-      
-      if (!response.ok) {
-        throw new Error(`External API responded with status: ${response.status}`);
-      }
-      
-      return response.json();
-    } catch (error) {
-      console.error('Error fetching categories from external API:', error);
-      throw new Error('Failed to fetch categories');
-    }
-  },
-
   // Get all sub-categories
   async getSubCategories(): Promise<SubCategory[]> {
     try {
