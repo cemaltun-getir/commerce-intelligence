@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
     const size = searchParams.get('size');
 
     // Fetch data from external API
-    const response = await fetch('http://localhost:3001/api/external/locations');
+    const externalApiBase = process.env.EXTERNAL_API_BASE_URL || 'http://localhost:3001/api/external';
+    const response = await fetch(`${externalApiBase}/locations`);
     
     if (!response.ok) {
       throw new Error(`External API responded with status: ${response.status}`);
@@ -58,32 +59,22 @@ export async function GET(request: NextRequest) {
 // POST /api/warehouses - Create new warehouse (for admin purposes)
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
+    // Temporarily disabled MongoDB connection for production
+    // await connectDB();
     const body = await request.json();
     
-    const warehouse = new Warehouse({
+    // For now, return a mock response since we don't have MongoDB set up
+    const mockWarehouse = {
+      id: `mock_${Date.now()}`,
       name: body.name,
       province: body.province,
       district: body.district,
       demography: body.demography,
       size: body.size,
       domain: body.domain
-    });
-    
-    const savedWarehouse = await warehouse.save();
-    
-    // Transform to match frontend interface
-    const transformedWarehouse = {
-      id: savedWarehouse._id.toString(),
-      name: savedWarehouse.name,
-      province: savedWarehouse.province,
-      district: savedWarehouse.district,
-      demography: savedWarehouse.demography,
-      size: savedWarehouse.size,
-      domain: savedWarehouse.domain
     };
     
-    return NextResponse.json(transformedWarehouse, { status: 201 });
+    return NextResponse.json(mockWarehouse, { status: 201 });
   } catch (error) {
     console.error('Error creating warehouse:', error);
     return NextResponse.json(

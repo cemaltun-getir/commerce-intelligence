@@ -12,7 +12,8 @@ export async function GET(
     const { id } = await params;
     
     // Fetch data from external API
-    const response = await fetch('http://localhost:3001/api/external/locations');
+    const externalApiBase = process.env.EXTERNAL_API_BASE_URL || 'http://localhost:3001/api/external';
+    const response = await fetch(`${externalApiBase}/locations`);
     
     if (!response.ok) {
       throw new Error(`External API responded with status: ${response.status}`);
