@@ -108,7 +108,7 @@ export const mockWarehouses: Warehouse[] = [
     province: 'Bursa',
     district: 'Nilufer',
     region: 'Marmara',
-    demography: 'Suburban',
+    demography: 'Medium',
     size: 'Mini',
     domain: 'Getir'
   },
@@ -138,7 +138,7 @@ export const mockWarehouses: Warehouse[] = [
     province: 'Gaziantep',
     district: 'Sahinbey',
     region: 'Southeastern Anatolia',
-    demography: 'Suburban',
+    demography: 'Medium',
     size: 'Midi',
     domain: 'Getir'
   },
@@ -148,7 +148,7 @@ export const mockWarehouses: Warehouse[] = [
     province: 'Kocaeli',
     district: 'Izmit',
     region: 'Marmara',
-    demography: 'Suburban',
+    demography: 'Medium',
     size: 'Mini',
     domain: 'Getir'
   },
@@ -168,7 +168,7 @@ export const mockWarehouses: Warehouse[] = [
     province: 'Eskisehir',
     district: 'Tepebasi',
     region: 'Central Anatolia',
-    demography: 'Suburban',
+    demography: 'Medium',
     size: 'Mini',
     domain: 'Getir'
   },
