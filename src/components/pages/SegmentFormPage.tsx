@@ -15,7 +15,9 @@ import {
   Button,
   Space,
   App,
-  Skeleton
+  Skeleton,
+  Progress,
+  Steps
 } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
@@ -63,6 +65,10 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
   const [segment, setSegment] = useState<Segment | null>(null);
   const [pageLoading, setPageLoading] = useState(false);
   const [form] = Form.useForm();
+  const [formValues, setFormValues] = useState({
+    name: '',
+    priceLocation: ''
+  });
 
   const isEditing = Boolean(segmentId);
 
@@ -72,6 +78,11 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
     fetchPriceLocations();
   }, [fetchSegments, fetchWarehouses, fetchPriceLocations]);
 
+  // Track form values for progress indicator
+  const handleFormValuesChange = (changedValues: any, allValues: any) => {
+    setFormValues(allValues);
+  };
+
   // Load segment data if editing
   useEffect(() => {
     if (isEditing && segmentId && segments.length > 0) {
@@ -79,10 +90,12 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
       if (existingSegment) {
         setSegment(existingSegment);
         setSelectedWarehouses(existingSegment.warehouseIds || []);
-        form.setFieldsValue({
+        const segmentData = {
           name: existingSegment.name,
           priceLocation: existingSegment.priceLocation
-        });
+        };
+        form.setFieldsValue(segmentData);
+        setFormValues(segmentData);
       }
     }
   }, [isEditing, segmentId, segments, form]);
@@ -227,61 +240,158 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '900px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <Space align="center" style={{ marginBottom: '16px' }}>
+    <div style={{ padding: '24px' }}>
+      {/* Breadcrumb Navigation */}
+      <div style={{ 
+        marginBottom: '24px', 
+        padding: '16px 0',
+        borderBottom: '1px solid #f0f0f0'
+      }}>
+        <Space align="center" style={{ marginBottom: '8px' }}>
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
             onClick={handleCancel}
+            style={{ padding: '4px 8px' }}
           >
             Back
           </Button>
         </Space>
-        <Title level={2} style={{ margin: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+          <Text type="secondary" style={{ fontSize: '14px' }}>
+            Smart Pricing
+          </Text>
+          <Text type="secondary" style={{ fontSize: '14px' }}>/</Text>
+          <Text type="secondary" style={{ fontSize: '14px' }}>
+            Segmentation
+          </Text>
+          <Text type="secondary" style={{ fontSize: '14px' }}>/</Text>
+          <Text style={{ fontSize: '14px', fontWeight: 500 }}>
+            {isEditing ? 'Edit Segment' : 'Add New Segment'}
+          </Text>
+        </div>
+        <Title level={2} style={{ margin: 0, fontSize: '28px' }}>
           {isEditing ? 'Edit Segment' : 'Add New Segment'}
         </Title>
         {isEditing && segment && (
-          <Text type="secondary">
+          <Text type="secondary" style={{ fontSize: '16px' }}>
             Editing: {segment.name}
           </Text>
         )}
+      </div>
+
+      {/* Progress Indicator */}
+      <div style={{ 
+        marginBottom: '24px',
+        padding: '16px',
+        background: '#fff',
+        borderRadius: '8px',
+        border: '1px solid #e8e8e8'
+      }}>
+        <Steps
+          current={formValues.name && formValues.priceLocation ? 
+            (selectedWarehouses.length > 0 ? 2 : 1) : 0}
+          items={[
+            {
+              title: 'Basic Information',
+              description: 'Set segment name and price location',
+              status: formValues.name && formValues.priceLocation ? 'finish' : 'process'
+            },
+            {
+              title: 'Warehouse Selection',
+              description: 'Choose warehouses for the segment',
+              status: selectedWarehouses.length > 0 ? 'finish' : 
+                (formValues.name && formValues.priceLocation ? 'process' : 'wait')
+            },
+            {
+              title: 'Review & Save',
+              description: 'Review and create the segment',
+              status: selectedWarehouses.length > 0 ? 'process' : 'wait'
+            }
+          ]}
+          size="small"
+        />
       </div>
 
       <Form
         form={form}
         layout="vertical"
         onFinish={handleSave}
+        onValuesChange={handleFormValuesChange}
+        style={{ maxWidth: '100%' }}
       >
-        <Card title="Basic Information" style={{ marginBottom: '24px' }}>
-          <Form.Item
-            name="name"
-            label="Segment Name"
-            rules={[{ required: true, message: 'Please enter segment name' }]}
-          >
-            <Input placeholder="Enter segment name" size="large" />
-          </Form.Item>
+        {/* Basic Information Section */}
+        <div style={{ 
+          marginBottom: '32px',
+          padding: '24px',
+          background: '#fafafa',
+          borderRadius: '8px',
+          border: '1px solid #e8e8e8'
+        }}>
+          <Title level={4} style={{ margin: '0 0 20px 0', color: '#262626' }}>
+            Basic Information
+          </Title>
+          <Row gutter={24}>
+            <Col span={12}>
+              <Form.Item
+                name="name"
+                label={<span style={{ fontWeight: 500, fontSize: '14px' }}>Segment Name</span>}
+                rules={[{ required: true, message: 'Please enter segment name' }]}
+              >
+                <Input 
+                  placeholder="Enter segment name" 
+                  size="large"
+                  style={{ borderRadius: '6px' }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="priceLocation"
+                label={<span style={{ fontWeight: 500, fontSize: '14px' }}>Price Location</span>}
+                rules={[{ required: true, message: 'Please select a price location' }]}
+                tooltip="Select the location where competitor prices will be fetched from"
+              >
+                <Select 
+                  placeholder="Select price location for pricing data" 
+                  size="large"
+                  style={{ borderRadius: '6px' }}
+                >
+                  {priceLocations.map(location => (
+                    <Option key={location.id} value={location.id}>
+                      {location.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+        </div>
 
-          <Form.Item
-            name="priceLocation"
-            label="Price Location"
-            rules={[{ required: true, message: 'Please select a price location' }]}
-            tooltip="Select the location where competitor prices will be fetched from"
-          >
-            <Select placeholder="Select price location for pricing data" size="large">
-              {priceLocations.map(location => (
-                <Option key={location.id} value={location.id}>
-                  {location.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-        </Card>
-
-        <Card title="Warehouse Selection" style={{ marginBottom: '24px' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <Row gutter={16} style={{ marginBottom: '8px' }}>
+        {/* Warehouse Selection Section */}
+        <div style={{ 
+          marginBottom: '32px',
+          padding: '24px',
+          background: '#fafafa',
+          borderRadius: '8px',
+          border: '1px solid #e8e8e8'
+        }}>
+          <Title level={4} style={{ margin: '0 0 20px 0', color: '#262626' }}>
+            Warehouse Selection
+          </Title>
+          
+          {/* Filter Controls */}
+          <div style={{ 
+            marginBottom: '20px',
+            padding: '16px',
+            background: '#fff',
+            borderRadius: '6px',
+            border: '1px solid #e8e8e8'
+          }}>
+            <Text strong style={{ display: 'block', marginBottom: '12px', fontSize: '14px' }}>
+              Filter Warehouses
+            </Text>
+            <Row gutter={16}>
               <Col span={8}>
                 <Select
                   placeholder="Filter by Domain"
@@ -322,7 +432,7 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
                 </Select>
               </Col>
             </Row>
-            <Row gutter={16}>
+            <Row gutter={16} style={{ marginTop: '12px' }}>
               <Col span={8}>
                 <Select
                   placeholder="Filter by Size"
@@ -366,88 +476,129 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
             });
             
             return (
-              <Transfer
-                dataSource={filteredData}
-                targetKeys={selectedWarehouses}
-                onChange={handleWarehouseSelection}
-                render={renderWarehouseItem}
-                titles={[
-                  <span key="available" style={{ fontWeight: 600, fontSize: '14px' }}>
-                    📦 Available Warehouses
-                  </span>, 
-                  <span key="selected" style={{ fontWeight: 600, fontSize: '14px' }}>
-                    ✅ Selected Warehouses
-                  </span>
-                ]}
-                listStyle={{
-                  width: 380,
-                  height: 400,
-                  border: '1px solid #d9d9d9',
-                  borderRadius: '6px'
-                }}
-                oneWay
-                pagination={{
-                  pageSize: 5,
-                  simple: true
-                }}
-                showSearch
-              />
+              <div style={{ 
+                background: '#fff',
+                borderRadius: '6px',
+                border: '1px solid #e8e8e8',
+                padding: '16px'
+              }}>
+                <Transfer
+                  dataSource={filteredData}
+                  targetKeys={selectedWarehouses}
+                  onChange={handleWarehouseSelection}
+                  render={renderWarehouseItem}
+                  titles={[
+                    <span key="available" style={{ fontWeight: 600, fontSize: '14px', color: '#262626' }}>
+                      📦 Available Warehouses ({filteredData.length})
+                    </span>, 
+                    <span key="selected" style={{ fontWeight: 600, fontSize: '14px', color: '#262626' }}>
+                      ✅ Selected Warehouses ({selectedWarehouses.length})
+                    </span>
+                  ]}
+                  listStyle={{
+                    width: 380,
+                    height: 400,
+                    border: '1px solid #d9d9d9',
+                    borderRadius: '6px'
+                  }}
+                  oneWay
+                  pagination={{
+                    pageSize: 5,
+                    simple: true
+                  }}
+                  showSearch
+                />
+              </div>
             );
           })()}
-        </Card>
+        </div>
 
+        {/* Segment Preview Section */}
         {selectedWarehouses.length > 0 && (
-          <Card title="📊 Segment Preview" style={{ marginBottom: '24px' }}>
+          <div style={{ 
+            marginBottom: '32px',
+            padding: '24px',
+            background: '#f0f9ff',
+            borderRadius: '8px',
+            border: '1px solid #bae6fd'
+          }}>
+            <Title level={4} style={{ margin: '0 0 20px 0', color: '#0369a1' }}>
+              📊 Segment Preview
+            </Title>
             <Row gutter={[16, 12]}>
               <Col span={6}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#1890ff' }}>
+                <div style={{ 
+                  textAlign: 'center',
+                  padding: '16px',
+                  background: '#fff',
+                  borderRadius: '6px',
+                  border: '1px solid #e8e8e8'
+                }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1890ff' }}>
                     {selectedWarehouses.length}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>Warehouses</div>
+                  <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>Warehouses</div>
                 </div>
               </Col>
               <Col span={6}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#52c41a' }}>
+                <div style={{ 
+                  textAlign: 'center',
+                  padding: '16px',
+                  background: '#fff',
+                  borderRadius: '6px',
+                  border: '1px solid #e8e8e8'
+                }}>
+                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#52c41a' }}>
                     {[...new Set(warehouses
                       .filter(w => selectedWarehouses.includes(w.id))
                       .map(w => w.domain)
                     )].length}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>Domains</div>
+                  <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>Domains</div>
                 </div>
               </Col>
               <Col span={6}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#fa8c16' }}>
+                <div style={{ 
+                  textAlign: 'center',
+                  padding: '16px',
+                  background: '#fff',
+                  borderRadius: '6px',
+                  border: '1px solid #e8e8e8'
+                }}>
+                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#fa8c16' }}>
                     {[...new Set(warehouses
                       .filter(w => selectedWarehouses.includes(w.id))
                       .map(w => w.province)
                     )].length}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>Provinces</div>
+                  <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>Provinces</div>
                 </div>
               </Col>
               <Col span={6}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#722ed1' }}>
+                <div style={{ 
+                  textAlign: 'center',
+                  padding: '16px',
+                  background: '#fff',
+                  borderRadius: '6px',
+                  border: '1px solid #e8e8e8'
+                }}>
+                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#722ed1' }}>
                     {[...new Set(warehouses
                       .filter(w => selectedWarehouses.includes(w.id))
                       .map(w => w.district)
                     )].length}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>Districts</div>
+                  <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>Districts</div>
                 </div>
               </Col>
             </Row>
             
-            <Divider style={{ margin: '12px 0' }} />
+            <Divider style={{ margin: '20px 0' }} />
             
             <Row gutter={[8, 8]}>
               <Col span={24}>
-                <Text strong style={{ fontSize: '12px', color: '#666' }}>DOMAINS:</Text>
-                <div style={{ marginTop: '4px' }}>
+                <Text strong style={{ fontSize: '14px', color: '#666' }}>DOMAINS:</Text>
+                <div style={{ marginTop: '8px' }}>
                   {[...new Set(warehouses
                     .filter(w => selectedWarehouses.includes(w.id))
                     .map(w => w.domain)
@@ -459,29 +610,41 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
                 </div>
               </Col>
             </Row>
-          </Card>
+          </div>
         )}
 
         {/* Action Buttons */}
-        <Card>
-          <Row justify="end">
-            <Space>
-              <Button size="large" onClick={handleCancel}>
-                Cancel
-              </Button>
-              <Button
-                type="primary"
-                size="large"
-                icon={<SaveOutlined />}
-                loading={pageLoading}
-                htmlType="submit"
-                style={{ background: '#7C3AED' }}
-              >
-                {isEditing ? 'Update Segment' : 'Create Segment'}
-              </Button>
-            </Space>
-          </Row>
-        </Card>
+        <div style={{ 
+          padding: '24px',
+          background: '#fff',
+          borderRadius: '8px',
+          border: '1px solid #e8e8e8',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: '12px'
+        }}>
+          <Button 
+            size="large" 
+            onClick={handleCancel}
+            style={{ minWidth: '120px' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="primary"
+            size="large"
+            icon={<SaveOutlined />}
+            loading={pageLoading}
+            htmlType="submit"
+            style={{ 
+              background: '#7C3AED',
+              borderColor: '#7C3AED',
+              minWidth: '160px'
+            }}
+          >
+            {isEditing ? 'Update Segment' : 'Create Segment'}
+          </Button>
+        </div>
       </Form>
     </div>
   );

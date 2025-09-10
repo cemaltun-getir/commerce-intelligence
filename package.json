@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "migrate:segments": "node scripts/migrate-segments.js"
+    "migrate:segments": "node scripts/migrate-segments.js",
+    "heroku-postbuild": "npm run build"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
