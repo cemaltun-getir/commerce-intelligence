@@ -159,7 +159,7 @@ export const mockWarehouses: Warehouse[] = [
     district: 'Akdeniz',
     region: 'Mediterranean',
     demography: 'Premium',
-    size: 'XLarge',
+    size: 'GB Maxi',
     domain: 'Getir'
   },
   {
