@@ -143,7 +143,7 @@ export const exportProductMatches = (
       'Discounted': item.isDiscounted ? 'Yes' : 'No',
       'Struck Price (API)': item.struckPrice || '',
       'Discount %': item.struckPrice && item.competitorPrice ? 
-        ((item.struckPrice - item.competitorPrice) / item.struckPrice * 100).toFixed(1) + '%' : ''
+        ((Number(item.struckPrice) - Number(item.competitorPrice)) / Number(item.struckPrice) * 100).toFixed(1) + '%' : ''
     };
 
     // Check if this specific product has a discount rate
