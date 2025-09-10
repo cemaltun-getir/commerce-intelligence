@@ -71,15 +71,15 @@ export const segmentApi = {
   // Get available price locations from external API
   async getPriceLocations(): Promise<PriceLocation[]> {
     try {
-      const response = await fetch('http://localhost:3001/api/external/price-locations');
+      const response = await fetch('/api/external-price-locations');
       
       if (!response.ok) {
-        throw new Error(`External API responded with status: ${response.status}`);
+        throw new Error(`Price locations API responded with status: ${response.status}`);
       }
       
       return response.json();
     } catch (error) {
-      console.error('Error fetching price locations from external API:', error);
+      console.error('Error fetching price locations:', error);
       throw new Error('Failed to fetch price locations');
     }
   }
