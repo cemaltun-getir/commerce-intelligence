@@ -507,7 +507,7 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
                     simple: true
                   }}
                   showSearch
-                  showSelectAll={false}
+                  selectAllLabels={['Select All', 'Select All']}
                 />
               </div>
             );
