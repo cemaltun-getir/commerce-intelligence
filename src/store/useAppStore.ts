@@ -51,6 +51,7 @@ interface AppState {
   productFilter: ProductFilter;
   segmentFilter: SegmentFilter;
   loading: boolean;
+  loadingOperations: Set<string>;
   
   // Actions
   setActiveCompetitor: (competitorId: string) => void;
@@ -58,6 +59,8 @@ interface AppState {
   setProductFilter: (filter: Partial<ProductFilter>) => void;
   setSegmentFilter: (filter: Partial<SegmentFilter>) => void;
   setLoading: (loading: boolean) => void;
+  startLoading: (operation: string) => void;
+  stopLoading: (operation: string) => void;
   
   // Segment actions
   fetchSegments: () => Promise<void>;
@@ -116,6 +119,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   productFilter: {},
   segmentFilter: {},
   loading: false,
+  loadingOperations: new Set(),
   
   // Actions
   setActiveCompetitor: (competitorId) => set({ activeCompetitor: competitorId }),
@@ -124,15 +128,34 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSegmentFilter: (filter) => set({ segmentFilter: { ...get().segmentFilter, ...filter } }),
   setLoading: (loading) => set({ loading }),
   
+  startLoading: (operation) => set((state) => {
+    const newOperations = new Set(state.loadingOperations);
+    newOperations.add(operation);
+    return { 
+      loadingOperations: newOperations, 
+      loading: true 
+    };
+  }),
+  
+  stopLoading: (operation) => set((state) => {
+    const newOperations = new Set(state.loadingOperations);
+    newOperations.delete(operation);
+    return { 
+      loadingOperations: newOperations, 
+      loading: newOperations.size > 0 
+    };
+  }),
+  
   // Segment actions
   fetchSegments: async () => {
     try {
-      set({ loading: true });
+      get().startLoading('segments');
       const segments = await segmentApi.getAll();
-      set({ segments, loading: false });
+      set({ segments });
+      get().stopLoading('segments');
     } catch (error) {
       console.error('Failed to fetch segments:', error);
-      set({ loading: false });
+      get().stopLoading('segments');
     }
   },
 
@@ -218,12 +241,13 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   fetchIndexValues: async () => {
     try {
-      set({ loading: true });
+      get().startLoading('indexValues');
       const indexValues = await indexValueApi.getAll();
-      set({ indexValues, loading: false });
+      set({ indexValues });
+      get().stopLoading('indexValues');
     } catch (error) {
       console.error('Failed to fetch index values:', error);
-      set({ loading: false });
+      get().stopLoading('indexValues');
     }
   },
 
@@ -262,12 +286,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Warehouse actions
   fetchWarehouses: async () => {
     try {
-      set({ loading: true });
+      get().startLoading('warehouses');
       const warehouses = await warehouseApi.getAll();
-      set({ warehouses, loading: false });
+      set({ warehouses });
+      get().stopLoading('warehouses');
     } catch (error) {
       console.error('Failed to fetch warehouses:', error);
-      set({ loading: false });
+      get().stopLoading('warehouses');
     }
   },
 
@@ -283,68 +308,74 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Price Location actions
   fetchPriceLocations: async () => {
     try {
-      set({ loading: true });
+      get().startLoading('priceLocations');
       const priceLocations = await segmentApi.getPriceLocations();
-      set({ priceLocations, loading: false });
+      set({ priceLocations });
+      get().stopLoading('priceLocations');
     } catch (error) {
       console.error('Failed to fetch price locations:', error);
-      set({ loading: false });
+      get().stopLoading('priceLocations');
     }
   },
 
   // External API actions
   fetchProducts: async () => {
     try {
-      set({ loading: true });
+      get().startLoading('products');
       const products = await externalApi.getProducts();
-      set({ products, loading: false });
+      set({ products });
+      get().stopLoading('products');
     } catch (error) {
       console.error('Failed to fetch products:', error);
-      set({ loading: false });
+      get().stopLoading('products');
     }
   },
 
   fetchVendors: async () => {
     try {
-      set({ loading: true });
+      get().startLoading('vendors');
       const competitors = await externalApi.getVendors();
-      set({ competitors, loading: false });
+      set({ competitors });
+      get().stopLoading('vendors');
     } catch (error) {
       console.error('Failed to fetch vendors:', error);
-      set({ loading: false });
+      get().stopLoading('vendors');
     }
   },
 
   fetchCompetitorPrices: async () => {
     try {
-      set({ loading: true });
+      get().startLoading('competitorPrices');
       const competitorPrices = await externalApi.getPriceMappings();
-      set({ competitorPrices, loading: false });
+      set({ competitorPrices });
+      get().stopLoading('competitorPrices');
     } catch (error) {
       console.error('Failed to fetch competitor prices:', error);
-      set({ loading: false });
+      get().stopLoading('competitorPrices');
     }
   },
 
   fetchCategories: async () => {
     try {
-      set({ loading: true });
+      get().startLoading('categories');
       const categories = await externalApi.getCategories();
-      set({ categories, loading: false });
+      set({ categories });
+      get().stopLoading('categories');
     } catch (error) {
       console.error('Failed to fetch categories:', error);
-      set({ loading: false });
+      get().stopLoading('categories');
     }
   },
 
   fetchSubCategories: async () => {
     try {
-      set({ loading: true });
+      get().startLoading('subCategories');
       const subCategories = await externalApi.getSubCategories();
-      set({ subCategories, loading: false });
+      set({ subCategories });
+      get().stopLoading('subCategories');
     } catch (error) {
       console.error('Failed to fetch sub-categories:', error);
-      set({ loading: false });
+      get().stopLoading('subCategories');
     }
   },
 })); 
