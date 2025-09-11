@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Typography, 
   Tabs, 
@@ -8,7 +8,6 @@ import {
   Row,
   Col,
   Card,
-  Tag,
 } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { useAppStore } from '@/store/useAppStore';
@@ -246,7 +245,7 @@ const IndexesPage: React.FC = () => {
             border: '1px dashed #d9d9d9'
           }}>
             <Text type="secondary" style={{ fontSize: '16px' }}>
-              No segments found matching "{searchText}"
+              No segments found matching &quot;{searchText}&quot;
             </Text>
             <br />
             <Text type="secondary" style={{ fontSize: '14px' }}>
