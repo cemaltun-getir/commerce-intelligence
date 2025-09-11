@@ -27,6 +27,7 @@ const IndexesPage: React.FC = () => {
     segments, 
     indexValues,
     competitors,
+    loading,
     fetchSegments,
     fetchIndexValues,
     fetchVendors,
@@ -258,6 +259,7 @@ const IndexesPage: React.FC = () => {
           <ClientOnlyTable
             dataSource={filteredIndexData}
             columns={indexColumns}
+            loading={loading}
             pagination={{
               total: filteredIndexData.length,
               pageSize: 10,

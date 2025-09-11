@@ -206,6 +206,7 @@ const IndexPage: React.FC = () => {
     competitorPrices,
     categories,
     subCategories,
+    loading,
     fetchSegments,
     fetchIndexValues,
     fetchProducts,
@@ -1379,6 +1380,7 @@ const IndexPage: React.FC = () => {
         <ClientOnlyTable
           dataSource={indexData}
           columns={indexColumns}
+          loading={loading}
           pagination={false}
           size="small"
           bordered
@@ -1568,6 +1570,7 @@ const IndexPage: React.FC = () => {
                     </SortableColumn>
                   ),
                 }))}
+                loading={loading}
                 rowSelection={{
                   selectedRowKeys,
                   onChange: (newSelectedRowKeys) => {

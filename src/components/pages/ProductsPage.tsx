@@ -205,6 +205,7 @@ const ProductsPage: React.FC = () => {
     competitorPrices,
     categories,
     subCategories,
+    loading,
     fetchSegments,
     fetchIndexValues,
     fetchProducts,
@@ -1426,6 +1427,7 @@ const ProductsPage: React.FC = () => {
                     </SortableColumn>
                   ),
                 }))}
+                loading={loading}
                 rowSelection={{
                   selectedRowKeys,
                   onChange: (newSelectedRowKeys) => {
