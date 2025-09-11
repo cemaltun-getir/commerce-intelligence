@@ -29,16 +29,18 @@ const IndexesPage: React.FC = () => {
     competitors,
     fetchSegments,
     fetchIndexValues,
+    fetchVendors,
     updateIndexValue,
     activeSalesChannel,
     setActiveSalesChannel 
   } = useAppStore();
 
-  // Fetch segments and index values on component mount
+  // Fetch segments, index values, and vendors on component mount
   useEffect(() => {
     fetchSegments();
     fetchIndexValues();
-  }, [fetchSegments, fetchIndexValues]);
+    fetchVendors();
+  }, [fetchSegments, fetchIndexValues, fetchVendors]);
 
   // Update local state when store changes
   useEffect(() => {
