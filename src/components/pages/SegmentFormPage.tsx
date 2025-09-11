@@ -507,6 +507,7 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
                     simple: true
                   }}
                   showSearch
+                  showSelectAll={false}
                 />
               </div>
             );
