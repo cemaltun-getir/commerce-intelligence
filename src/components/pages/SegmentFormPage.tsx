@@ -482,33 +482,39 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
                 border: '1px solid #e8e8e8',
                 padding: '16px'
               }}>
-                <Transfer
-                  dataSource={filteredData}
-                  targetKeys={selectedWarehouses}
-                  onChange={handleWarehouseSelection}
-                  render={renderWarehouseItem}
-                  titles={[
-                    <span key="available" style={{ fontWeight: 600, fontSize: '14px', color: '#262626' }}>
-                      📦 Available Warehouses ({filteredData.length})
-                    </span>, 
-                    <span key="selected" style={{ fontWeight: 600, fontSize: '14px', color: '#262626' }}>
-                      ✅ Selected Warehouses ({selectedWarehouses.length})
-                    </span>
-                  ]}
-                  listStyle={{
-                    width: 380,
-                    height: 400,
-                    border: '1px solid #d9d9d9',
-                    borderRadius: '6px'
-                  }}
-                  oneWay
-                  pagination={{
-                    pageSize: 5,
-                    simple: true
-                  }}
-                  showSearch
-                  operations={[]}
-                />
+                <div style={{ position: 'relative' }}>
+                  <Transfer
+                    dataSource={filteredData}
+                    targetKeys={selectedWarehouses}
+                    onChange={handleWarehouseSelection}
+                    render={renderWarehouseItem}
+                    titles={[
+                      <span key="available" style={{ fontWeight: 600, fontSize: '14px', color: '#262626' }}>
+                        📦 Available Warehouses ({filteredData.length})
+                      </span>, 
+                      <span key="selected" style={{ fontWeight: 600, fontSize: '14px', color: '#262626' }}>
+                        ✅ Selected Warehouses ({selectedWarehouses.length})
+                      </span>
+                    ]}
+                    listStyle={{
+                      width: 380,
+                      height: 400,
+                      border: '1px solid #d9d9d9',
+                      borderRadius: '6px'
+                    }}
+                    oneWay
+                    pagination={{
+                      pageSize: 5,
+                      simple: true
+                    }}
+                    showSearch
+                  />
+                  <style jsx>{`
+                    :global(.ant-transfer-list-header-dropdown .ant-dropdown-menu-item:nth-child(3)) {
+                      display: none !important;
+                    }
+                  `}</style>
+                </div>
               </div>
             );
           })()}
