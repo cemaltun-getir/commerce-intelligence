@@ -12,7 +12,8 @@ import {
   RightOutlined,
   LeftOutlined,
   AppstoreOutlined,
-  LineChartOutlined
+  LineChartOutlined,
+  ShoppingOutlined
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -40,9 +41,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           label: 'Segmentation',
         },
         {
-          key: '/pricing/index',
+          key: '/pricing/indexes',
           icon: <LineChartOutlined />,
-          label: 'Index',
+          label: 'Indexes',
+        },
+        {
+          key: '/pricing/products',
+          icon: <ShoppingOutlined />,
+          label: 'Products',
         },
       ]
     },

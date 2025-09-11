@@ -1,10 +1,14 @@
-import MainLayout from '@/components/layout/MainLayout';
-import IndexPage from '@/components/pages/IndexPage';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  return (
-    <MainLayout>
-      <IndexPage />
-    </MainLayout>
-  );
+  const router = useRouter();
+  
+  useEffect(() => {
+    router.replace('/pricing/products');
+  }, [router]);
+
+  return null;
 }
