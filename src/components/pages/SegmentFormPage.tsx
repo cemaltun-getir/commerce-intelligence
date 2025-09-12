@@ -507,6 +507,11 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
                     simple: true
                   }}
                   showSearch
+                  locale={{
+                    selectAll: 'Select all data',
+                    selectCurrent: 'Select current page',
+                    selectInvert: undefined // This removes the "Invert current page" option
+                  }}
                 />
               </div>
             );
