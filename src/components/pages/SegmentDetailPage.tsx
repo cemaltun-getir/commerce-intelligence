@@ -321,7 +321,7 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
               )}
             </Space>
           </Descriptions.Item>
-          <Descriptions.Item label="API Location" span={2}>
+          <Descriptions.Item label="Price Location" span={2}>
             <Text strong>
               {(() => {
                 const location = priceLocations.find(loc => loc.id === segment.priceLocation);
