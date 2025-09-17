@@ -134,14 +134,8 @@ const SegmentationPage: React.FC = () => {
       dataIndex: 'name',
       key: 'name',
       sorter: (a: any, b: any) => a.name.localeCompare(b.name),
-      render: (name: string, record: Segment) => (
-        <Button
-          type="link"
-          style={{ padding: 0, height: 'auto', fontWeight: 500 }}
-          onClick={() => router.push(`/pricing/segmentation/${record.id}`)}
-        >
-          {name}
-        </Button>
+      render: (name: string) => (
+        <span style={{ fontWeight: 500 }}>{name}</span>
       ),
     },
     {
