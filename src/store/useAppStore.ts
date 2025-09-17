@@ -287,7 +287,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   fetchWarehouses: async () => {
     try {
       get().startLoading('warehouses');
-      const warehouses = await warehouseApi.getAll();
+      const warehouses = await externalApi.getWarehouses();
       set({ warehouses });
       get().stopLoading('warehouses');
     } catch (error) {

@@ -25,7 +25,20 @@ async function getWarehousesByIds(warehouseIds: string[]): Promise<Warehouse[]> 
       throw new Error(`External API responded with status: ${response.status}`);
     }
     
-    const warehouses: Warehouse[] = await response.json();
+    const externalWarehouses = await response.json();
+    
+    // Transform external warehouse format to internal format
+    const warehouses: Warehouse[] = externalWarehouses.map((warehouse: any) => ({
+      id: warehouse.id,
+      name: warehouse.name,
+      province: warehouse.city, // Map city to province
+      district: warehouse.region, // Map region to district
+      region: warehouse.region,
+      demography: warehouse.demography,
+      size: warehouse.size,
+      domain: warehouse.domain
+    }));
+    
     return warehouses.filter(w => warehouseIds.includes(w.id));
   } catch (error) {
     console.error('Error fetching warehouses from external API:', error);

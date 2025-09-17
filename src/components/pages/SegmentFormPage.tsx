@@ -58,7 +58,7 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
   const [warehouseFilter, setWarehouseFilter] = useState({
     domain: '',
     region: '',
-    province: '',
+    city: '',
     size: '',
     demography: ''
   });
@@ -199,7 +199,7 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
             color: '#8c8c8c',
             marginBottom: '6px'
           }}>
-            📍 {warehouse.province}, {warehouse.district}
+            📍 {warehouse.province}, {warehouse.region}
           </div>
           <div style={{ 
             display: 'flex', 
@@ -420,14 +420,14 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
               </Col>
               <Col span={8}>
                 <Select
-                  placeholder="Filter by Province"
+                  placeholder="Filter by City"
                   style={{ width: '100%' }}
-                  value={warehouseFilter.province || undefined}
-                  onChange={(value) => setWarehouseFilter(prev => ({ ...prev, province: value || '' }))}
+                  value={warehouseFilter.city || undefined}
+                  onChange={(value) => setWarehouseFilter(prev => ({ ...prev, city: value || '' }))}
                   allowClear
                 >
-                  {[...new Set(getAvailableWarehouses().map(w => w.province))].map(province => (
-                    <Option key={province} value={province}>{province}</Option>
+                  {[...new Set(getAvailableWarehouses().map(w => w.province))].map(city => (
+                    <Option key={city} value={city}>{city}</Option>
                   ))}
                 </Select>
               </Col>
@@ -470,7 +470,7 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
               
               return (!warehouseFilter.domain || warehouse.domain === warehouseFilter.domain) &&
                      (!warehouseFilter.region || warehouse.region === warehouseFilter.region) &&
-                     (!warehouseFilter.province || warehouse.province === warehouseFilter.province) &&
+                     (!warehouseFilter.city || warehouse.province === warehouseFilter.city) &&
                      (!warehouseFilter.size || warehouse.size === warehouseFilter.size) &&
                      (!warehouseFilter.demography || warehouse.demography === warehouseFilter.demography);
             });
@@ -576,7 +576,7 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
                       .map(w => w.province)
                     )].length}
                   </div>
-                  <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>Provinces</div>
+                  <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>Cities</div>
                 </div>
               </Col>
               <Col span={6}>
@@ -590,10 +590,10 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
                   <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#722ed1' }}>
                     {[...new Set(warehouses
                       .filter(w => selectedWarehouses.includes(w.id))
-                      .map(w => w.district)
+                      .map(w => w.region)
                     )].length}
                   </div>
-                  <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>Districts</div>
+                  <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>Regions</div>
                 </div>
               </Col>
             </Row>

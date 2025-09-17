@@ -277,25 +277,14 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
           <Descriptions.Item label="Warehouse Count">
             <Text strong>{segment.warehouseIds?.length || 0}</Text>
           </Descriptions.Item>
-          <Descriptions.Item label="Provinces">
+          <Descriptions.Item label="Cities">
             <Space wrap>
               {segment.provinces && segment.provinces.length > 0 ? (
-                segment.provinces.map((province, index) => (
-                  <Tag key={index} color={getGeographicColor('province')}>{province}</Tag>
+                segment.provinces.map((city, index) => (
+                  <Tag key={index} color={getGeographicColor('province')}>{city}</Tag>
                 ))
               ) : (
-                <Text type="secondary">No provinces</Text>
-              )}
-            </Space>
-          </Descriptions.Item>
-          <Descriptions.Item label="Districts">
-            <Space wrap>
-              {segment.districts && segment.districts.length > 0 ? (
-                segment.districts.map((district, index) => (
-                  <Tag key={index} color={getGeographicColor('district')}>{district}</Tag>
-                ))
-              ) : (
-                <Text type="secondary">No districts</Text>
+                <Text type="secondary">No cities</Text>
               )}
             </Space>
           </Descriptions.Item>
@@ -310,7 +299,7 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
               )}
             </Space>
           </Descriptions.Item>
-          <Descriptions.Item label="Demographies">
+          <Descriptions.Item label="Demographies" span={2}>
             <Space wrap>
               {segment.demographies && segment.demographies.length > 0 ? (
                 segment.demographies.map((demography, index) => (
@@ -491,7 +480,7 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
                         
                         <div style={{ marginBottom: '4px' }}>
                           <Text type="secondary" style={{ fontSize: '12px' }}>
-                            📍 {warehouse.province}, {warehouse.district} • 🏢 {warehouse.region}
+                            📍 {warehouse.province}, {warehouse.region}
                           </Text>
                         </div>
                       </Col>

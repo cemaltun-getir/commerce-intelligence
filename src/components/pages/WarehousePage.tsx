@@ -37,8 +37,8 @@ const WarehousePage: React.FC = () => {
 
   const [filters, setFilters] = useState({
     search: '',
-    province: '',
-    district: '',
+    city: '',
+    region: '',
     domain: '',
     demography: '',
     size: ''
@@ -54,10 +54,10 @@ const WarehousePage: React.FC = () => {
       (!filters.search || 
         warehouse.name.toLowerCase().includes(filters.search.toLowerCase()) ||
         warehouse.province.toLowerCase().includes(filters.search.toLowerCase()) ||
-        warehouse.district.toLowerCase().includes(filters.search.toLowerCase())
+        warehouse.region.toLowerCase().includes(filters.search.toLowerCase())
       ) &&
-      (!filters.province || warehouse.province === filters.province) &&
-      (!filters.district || warehouse.district === filters.district) &&
+      (!filters.city || warehouse.province === filters.city) &&
+      (!filters.region || warehouse.region === filters.region) &&
       (!filters.domain || warehouse.domain === filters.domain) &&
       (!filters.demography || warehouse.demography === filters.demography) &&
       (!filters.size || warehouse.size === filters.size)
@@ -65,19 +65,19 @@ const WarehousePage: React.FC = () => {
   });
 
   // Get unique values for filter dropdowns
-  const uniqueProvinces = [...new Set(warehouses.map(w => w.province))];
-  const uniqueDistricts = [...new Set(warehouses.map(w => w.district))];
+  const uniqueCities = [...new Set(warehouses.map(w => w.province))];
+  const uniqueRegions = [...new Set(warehouses.map(w => w.region))];
 
   const handleSearch = (value: string) => {
     setFilters(prev => ({ ...prev, search: value }));
   };
 
-  const handleProvinceChange = (value: string) => {
-    setFilters(prev => ({ ...prev, province: value, district: '' })); // Reset district when province changes
+  const handleCityChange = (value: string) => {
+    setFilters(prev => ({ ...prev, city: value }));
   };
 
-  const handleDistrictChange = (value: string) => {
-    setFilters(prev => ({ ...prev, district: value }));
+  const handleRegionChange = (value: string) => {
+    setFilters(prev => ({ ...prev, region: value }));
   };
 
   const handleDomainChange = (value: string) => {
@@ -95,8 +95,8 @@ const WarehousePage: React.FC = () => {
   const clearAllFilters = () => {
     setFilters({
       search: '',
-      province: '',
-      district: '',
+      city: '',
+      region: '',
       domain: '',
       demography: '',
       size: ''
@@ -118,8 +118,8 @@ const WarehousePage: React.FC = () => {
       key: 'location',
       render: (_, record) => (
         <div>
-          <div>{record.province}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>{record.district}</div>
+          <div style={{ fontWeight: 500 }}>{record.province}</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>{record.region}</div>
         </div>
       )
     },
@@ -255,9 +255,9 @@ const WarehousePage: React.FC = () => {
           <Card>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#722ed1' }}>
-                {uniqueProvinces.length}
+                {uniqueCities.length}
               </div>
-              <div style={{ color: '#666' }}>Provinces</div>
+              <div style={{ color: '#666' }}>Cities</div>
             </div>
           </Card>
         </Col>
@@ -275,34 +275,30 @@ const WarehousePage: React.FC = () => {
               allowClear
             />
           </Col>
-          <Col span={3}>
+          <Col span={4}>
             <Select 
-              placeholder="Province" 
+              placeholder="City" 
               style={{ width: '100%' }}
-              value={filters.province || undefined}
-              onChange={handleProvinceChange}
+              value={filters.city || undefined}
+              onChange={handleCityChange}
               allowClear
             >
-              {uniqueProvinces.map(province => (
-                <Option key={province} value={province}>{province}</Option>
+              {uniqueCities.map(city => (
+                <Option key={city} value={city}>{city}</Option>
               ))}
             </Select>
           </Col>
-          <Col span={3}>
+          <Col span={4}>
             <Select 
-              placeholder="District" 
+              placeholder="Region" 
               style={{ width: '100%' }}
-              value={filters.district || undefined}
-              onChange={handleDistrictChange}
+              value={filters.region || undefined}
+              onChange={handleRegionChange}
               allowClear
             >
-              {uniqueDistricts
-                .filter(district => !filters.province || 
-                  warehouses.some(w => w.province === filters.province && w.district === district)
-                )
-                .map(district => (
-                  <Option key={district} value={district}>{district}</Option>
-                ))}
+              {uniqueRegions.map(region => (
+                <Option key={region} value={region}>{region}</Option>
+              ))}
             </Select>
           </Col>
           <Col span={3}>
@@ -344,13 +340,13 @@ const WarehousePage: React.FC = () => {
               ))}
             </Select>
           </Col>
-          <Col span={5}>
+          <Col span={2}>
             <Space>
               <Button 
                 icon={<FilterOutlined />}
                 onClick={clearAllFilters}
               >
-                Clear Filters
+                Clear
               </Button>
             </Space>
           </Col>

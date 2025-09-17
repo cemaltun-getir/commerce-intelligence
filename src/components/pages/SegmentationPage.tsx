@@ -55,10 +55,9 @@ const SegmentationPage: React.FC = () => {
 
   const [filters, setFilters] = useState({
     search: '',
-    province: '',
-    district: '',
-    region: '',
-    domain: ''
+    cities: [] as string[],
+    regions: [] as string[],
+    domains: [] as string[]
   });
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
@@ -81,37 +80,36 @@ const SegmentationPage: React.FC = () => {
       );
     }
 
-    // Province filter
-    if (filters.province && filters.province !== 'all') {
+    // Cities filter
+    if (filters.cities.length > 0) {
       filtered = filtered.filter((item: Segment) =>
-        item.provinces?.some(province =>
-          province.toLowerCase() === filters.province.toLowerCase()
+        item.provinces?.some(city =>
+          filters.cities.some(filterCity => 
+            city.toLowerCase() === filterCity.toLowerCase()
+          )
         )
       );
     }
 
-    // District filter
-    if (filters.district && filters.district !== 'all') {
-      filtered = filtered.filter((item: Segment) =>
-        item.districts?.some(district =>
-          district.toLowerCase() === filters.district.toLowerCase()
-        )
-      );
-    }
-
-    // Region filter
-    if (filters.region && filters.region !== 'all') {
+    // Regions filter
+    if (filters.regions.length > 0) {
       filtered = filtered.filter((item: Segment) =>
         item.regions?.some(region =>
-          region.toLowerCase() === filters.region.toLowerCase()
+          filters.regions.some(filterRegion => 
+            region.toLowerCase() === filterRegion.toLowerCase()
+          )
         )
       );
     }
 
-    // Domain filter
-    if (filters.domain && filters.domain !== 'all') {
+    // Domains filter
+    if (filters.domains.length > 0) {
       filtered = filtered.filter((item: Segment) =>
-        item.domains?.some(domain => domain.toLowerCase() === filters.domain.toLowerCase())
+        item.domains?.some(domain => 
+          filters.domains.some(filterDomain => 
+            domain.toLowerCase() === filterDomain.toLowerCase()
+          )
+        )
       );
     }
 
@@ -119,7 +117,7 @@ const SegmentationPage: React.FC = () => {
   }, [segments, filters]);
 
   // Get unique values for filter options
-  const getUniqueValues = (field: 'provinces' | 'districts' | 'regions' | 'domains') => {
+  const getUniqueValues = (field: 'provinces' | 'regions' | 'domains') => {
     const values = new Set<string>();
     segments.forEach(segment => {
       if (segment[field]) {
@@ -244,29 +242,24 @@ const SegmentationPage: React.FC = () => {
     setFilters(prev => ({ ...prev, search: value }));
   };
 
-  const handleProvinceChange = (value: string) => {
-    setFilters(prev => ({ ...prev, province: value }));
+  const handleCitiesChange = (value: string[]) => {
+    setFilters(prev => ({ ...prev, cities: value }));
   };
 
-  const handleDistrictChange = (value: string) => {
-    setFilters(prev => ({ ...prev, district: value }));
+  const handleRegionsChange = (value: string[]) => {
+    setFilters(prev => ({ ...prev, regions: value }));
   };
 
-  const handleRegionChange = (value: string) => {
-    setFilters(prev => ({ ...prev, region: value }));
-  };
-
-  const handleDomainChange = (value: string) => {
-    setFilters(prev => ({ ...prev, domain: value }));
+  const handleDomainsChange = (value: string[]) => {
+    setFilters(prev => ({ ...prev, domains: value }));
   };
 
   const clearAllFilters = () => {
     setFilters({
       search: '',
-      province: '',
-      district: '',
-      region: '',
-      domain: ''
+      cities: [],
+      regions: [],
+      domains: []
     });
   };
 
@@ -337,84 +330,65 @@ const SegmentationPage: React.FC = () => {
             allowClear
           />
         </Col>
-        <Col span={4}>
+        <Col span={6}>
           <Select
-            placeholder="Province"
+            mode="multiple"
+            placeholder="All Cities"
             style={{ width: '100%' }}
-            value={filters.province || undefined}
-            onChange={handleProvinceChange}
+            value={filters.cities}
+            onChange={handleCitiesChange}
             allowClear
+            maxTagCount="responsive"
+            showSearch
+            filterOption={(input, option) =>
+              (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+            }
           >
-            <Option value="all">All Provinces</Option>
-            {getUniqueValues('provinces').map(province => (
-              <Option key={province} value={province}>{province}</Option>
+            {getUniqueValues('provinces').map(city => (
+              <Option key={city} value={city}>{city}</Option>
             ))}
           </Select>
         </Col>
-        <Col span={4}>
+        <Col span={6}>
           <Select
-            placeholder="District"
+            mode="multiple"
+            placeholder="All Regions"
             style={{ width: '100%' }}
-            value={filters.district || undefined}
-            onChange={handleDistrictChange}
+            value={filters.regions}
+            onChange={handleRegionsChange}
             allowClear
+            maxTagCount="responsive"
+            showSearch
+            filterOption={(input, option) =>
+              (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+            }
           >
-            <Option value="all">All Districts</Option>
-            {getUniqueValues('districts').map(district => (
-              <Option key={district} value={district}>{district}</Option>
-            ))}
-          </Select>
-        </Col>
-        <Col span={4}>
-          <Select
-            placeholder="Region"
-            style={{ width: '100%' }}
-            value={filters.region || undefined}
-            onChange={handleRegionChange}
-            allowClear
-          >
-            <Option value="all">All Regions</Option>
             {getUniqueValues('regions').map(region => (
               <Option key={region} value={region}>{region}</Option>
             ))}
           </Select>
         </Col>
-        <Col span={4}>
+        <Col span={6}>
           <Select
-            placeholder="Domain"
+            mode="multiple"
+            placeholder="All Domains"
             style={{ width: '100%' }}
-            value={filters.domain || undefined}
-            onChange={handleDomainChange}
+            value={filters.domains}
+            onChange={handleDomainsChange}
             allowClear
+            maxTagCount="responsive"
+            showSearch
+            filterOption={(input, option) =>
+              (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+            }
           >
-            <Option value="all">All Domains</Option>
-            <Option value="Getir10">Getir10</Option>
-            <Option value="Getir30">Getir30</Option>
+            {getUniqueValues('domains').map(domain => (
+              <Option key={domain} value={domain}>{domain}</Option>
+            ))}
           </Select>
-        </Col>
-        <Col span={2}>
-          <Button onClick={clearAllFilters} style={{ width: '100%' }}>
-            Clear All
-          </Button>
         </Col>
       </Row>
 
-      {/* Filter Summary */}
-      {(filters.search || filters.province || filters.district || filters.region || filters.domain) && (
-        <Row style={{ marginBottom: '16px' }}>
-          <Col span={24}>
-            <Space wrap>
-              <Text type="secondary">Active filters:</Text>
-              {filters.search && <Tag closable onClose={() => setFilters(prev => ({ ...prev, search: '' }))}>Search: {filters.search}</Tag>}
-              {filters.province && <Tag closable onClose={() => setFilters(prev => ({ ...prev, province: '' }))}>Province: {filters.province}</Tag>}
-              {filters.district && <Tag closable onClose={() => setFilters(prev => ({ ...prev, district: '' }))}>District: {filters.district}</Tag>}
-              {filters.region && <Tag closable onClose={() => setFilters(prev => ({ ...prev, region: '' }))}>Region: {filters.region}</Tag>}
-              {filters.domain && <Tag closable onClose={() => setFilters(prev => ({ ...prev, domain: '' }))}>Domain: {filters.domain}</Tag>}
-              <Button type="link" size="small" onClick={clearAllFilters}>Clear all filters</Button>
-            </Space>
-          </Col>
-        </Row>
-      )}
 
       {/* Bulk Actions Bar */}
       {selectedRowKeys.length > 0 && (
