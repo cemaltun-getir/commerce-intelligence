@@ -341,7 +341,7 @@ const SegmentationPage: React.FC = () => {
             maxTagCount="responsive"
             showSearch
             filterOption={(input, option) =>
-              (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+              String(option?.children || '').toLowerCase().includes(input.toLowerCase())
             }
           >
             {getUniqueValues('provinces').map(city => (
@@ -360,7 +360,7 @@ const SegmentationPage: React.FC = () => {
             maxTagCount="responsive"
             showSearch
             filterOption={(input, option) =>
-              (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+              String(option?.children || '').toLowerCase().includes(input.toLowerCase())
             }
           >
             {getUniqueValues('regions').map(region => (
@@ -379,7 +379,7 @@ const SegmentationPage: React.FC = () => {
             maxTagCount="responsive"
             showSearch
             filterOption={(input, option) =>
-              (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+              String(option?.children || '').toLowerCase().includes(input.toLowerCase())
             }
           >
             {getUniqueValues('domains').map(domain => (
