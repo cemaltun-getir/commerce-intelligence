@@ -136,8 +136,11 @@ const IndexPage: React.FC = () => {
   
   // Filter states
   const [searchText, setSearchText] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedSubCategory, setSelectedSubCategory] = useState('all');
+  const [selectedLevel1, setSelectedLevel1] = useState('all');
+  const [selectedLevel2, setSelectedLevel2] = useState('all');
+  const [selectedLevel3, setSelectedLevel3] = useState('all');
+  const [selectedLevel4, setSelectedLevel4] = useState('all');
+  const [selectedBrandFilter, setSelectedBrandFilter] = useState('all');
   const [selectedCompetitorFilter, setSelectedCompetitorFilter] = useState('all');
   const [selectedDiscountedFilter, setSelectedDiscountedFilter] = useState('all');
   
@@ -206,6 +209,7 @@ const IndexPage: React.FC = () => {
     competitorPrices,
     categories,
     subCategories,
+    flattenedCategories,
     loading,
     fetchSegments,
     fetchIndexValues,
@@ -230,6 +234,23 @@ const IndexPage: React.FC = () => {
     fetchSubCategories();
   }, [fetchSegments, fetchIndexValues, fetchProducts, fetchVendors, fetchCompetitorPrices, fetchCategories, fetchSubCategories]);
 
+  // Fetch products when category filters change
+  useEffect(() => {
+    const categoryFilters: {
+      category_level1_id?: string;
+      category_level2_id?: string;
+      category_level3_id?: string;
+      category_level4_id?: string;
+    } = {};
+
+    if (selectedLevel1 !== 'all') categoryFilters.category_level1_id = selectedLevel1;
+    if (selectedLevel2 !== 'all') categoryFilters.category_level2_id = selectedLevel2;
+    if (selectedLevel3 !== 'all') categoryFilters.category_level3_id = selectedLevel3;
+    if (selectedLevel4 !== 'all') categoryFilters.category_level4_id = selectedLevel4;
+
+    fetchProducts(categoryFilters);
+  }, [selectedLevel1, selectedLevel2, selectedLevel3, selectedLevel4, fetchProducts]);
+
   // Update local state when store changes
   useEffect(() => {
     setActiveChannel(activeSalesChannel);
@@ -247,11 +268,28 @@ const IndexPage: React.FC = () => {
     setActiveSalesChannel(channel as 'getir' | 'getirbuyuk');
   };
 
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category);
-    // Reset sub-category selection when category changes
-    setSelectedSubCategory('all');
+  const handleLevel1Change = (value: string) => {
+    setSelectedLevel1(value);
+    setSelectedLevel2('all');
+    setSelectedLevel3('all');
+    setSelectedLevel4('all');
   };
+
+  const handleLevel2Change = (value: string) => {
+    setSelectedLevel2(value);
+    setSelectedLevel3('all');
+    setSelectedLevel4('all');
+  };
+
+  const handleLevel3Change = (value: string) => {
+    setSelectedLevel3(value);
+    setSelectedLevel4('all');
+  };
+
+  const handleLevel4Change = (value: string) => {
+    setSelectedLevel4(value);
+  };
+
 
   // Handle discount rate change
   const handleDiscountRateChange = (productKey: string, value: string) => {
@@ -454,10 +492,15 @@ const IndexPage: React.FC = () => {
     const expandedProductData: any[] = [];
     let keyCounter = 1;
 
+    // Get the IDs of filtered products to ensure we only process price mappings for products that exist
+    const filteredProductIds = new Set(products.map(p => p.id));
+
     segments.forEach((segment, segmentIndex) => {
       // Filter price mappings to only include those that match this segment's price location
+      // AND have corresponding products in the filtered products array
       const segmentPriceMappings = competitorPrices.filter(priceMapping => 
-        priceMapping.location_id === segment.priceLocation
+        priceMapping.location_id === segment.priceLocation &&
+        filteredProductIds.has(priceMapping.sku_id)
       );
 
       segmentPriceMappings.forEach(priceMapping => {
@@ -503,29 +546,32 @@ const IndexPage: React.FC = () => {
           ? calculateGetirPrice(baseProduct.competitorPrice, ix, segment.priceLocation) 
           : null;
         
-        expandedProductData.push({
-          key: keyCounter.toString(),
-          ...baseProduct,
-          competitorPrice: locationAdjustedCompetitorPrice, // Use location-adjusted price for display
-          id: `${baseProduct.id}_${segment.id}`, // Unique ID per segment
-          competitor: getCompetitorDisplayName(baseProduct.competitorId),
-          kviType,
-          ix,
-          getirUnitPrice: calculatedGetirPrice,
-          segmentId: segment.id,
-          segmentName: segment.name || `Segment #${segmentIndex + 1}`,
-          // Add metadata for better error messaging
-          hasApiLocation: !!segment.priceLocation,
-          hasIndexValue: ix !== null,
-          // New fields from API
-          isDiscounted: baseProduct.isDiscounted,
-          struckPrice: baseProduct.struckPrice,
-          // New buying price fields from SKU API
-          buyingPrice: baseProduct.buyingPrice,
-          buyingVat: baseProduct.buyingVat,
-          buyingPriceWithoutVat: baseProduct.buyingPriceWithoutVat,
-        });
-        keyCounter++;
+        // Only include products that have index values (restore previous behavior)
+        if (ix !== null) {
+          expandedProductData.push({
+            key: keyCounter.toString(),
+            ...baseProduct,
+            competitorPrice: locationAdjustedCompetitorPrice, // Use location-adjusted price for display
+            id: `${baseProduct.id}_${segment.id}`, // Unique ID per segment
+            competitor: getCompetitorDisplayName(baseProduct.competitorId),
+            kviType,
+            ix,
+            getirUnitPrice: calculatedGetirPrice,
+            segmentId: segment.id,
+            segmentName: segment.name || `Segment #${segmentIndex + 1}`,
+            // Add metadata for better error messaging
+            hasApiLocation: !!segment.priceLocation,
+            hasIndexValue: ix !== null,
+            // New fields from API
+            isDiscounted: baseProduct.isDiscounted,
+            struckPrice: baseProduct.struckPrice,
+            // New buying price fields from SKU API
+            buyingPrice: baseProduct.buyingPrice,
+            buyingVat: baseProduct.buyingVat,
+            buyingPriceWithoutVat: baseProduct.buyingPriceWithoutVat,
+          });
+          keyCounter++;
+        }
       });
     });
 
@@ -548,14 +594,11 @@ const IndexPage: React.FC = () => {
       );
     }
     
-    // Apply category filter
-    if (selectedCategory && selectedCategory !== 'all') {
-      filtered = filtered.filter(product => product.category === selectedCategory);
-    }
+    // Category filtering is now handled by the API call
     
-    // Apply sub-category filter
-    if (selectedSubCategory && selectedSubCategory !== 'all') {
-      filtered = filtered.filter(product => product.subCategory === selectedSubCategory);
+    // Apply brand filter
+    if (selectedBrandFilter && selectedBrandFilter !== 'all') {
+      filtered = filtered.filter(product => product.brand === selectedBrandFilter);
     }
     
     // Apply competitor filter
@@ -573,12 +616,12 @@ const IndexPage: React.FC = () => {
     }
     
     return filtered;
-  }, [productData, searchText, selectedCategory, selectedSubCategory, selectedCompetitorFilter, selectedDiscountedFilter]);
+  }, [productData, searchText, selectedBrandFilter, selectedCompetitorFilter, selectedDiscountedFilter]);
 
   // Clear selection when filters change
   useEffect(() => {
     setSelectedRowKeys([]);
-  }, [searchText, selectedCategory, selectedSubCategory, selectedCompetitorFilter, selectedDiscountedFilter]);
+  }, [searchText, selectedLevel1, selectedLevel2, selectedLevel3, selectedLevel4, selectedBrandFilter, selectedCompetitorFilter, selectedDiscountedFilter]);
 
   const handleExport = (format: 'csv' | 'xlsx') => {
     // If there are selected items, export only those
@@ -692,26 +735,72 @@ const IndexPage: React.FC = () => {
 
   const indexColumns = createIndexColumns();
 
-  // Get unique categories from external API
-  const uniqueCategories = useMemo(() => {
-    return categories.map(category => category.name).sort();
+  // Get level 1 categories (top level)
+  const level1Categories = useMemo(() => {
+    return categories.map(category => ({
+      value: category.id,
+      label: category.name
+    })).sort((a, b) => a.label.localeCompare(b.label));
   }, [categories]);
 
-  // Get sub-categories based on selected category
-  const availableSubCategories = useMemo(() => {
-    if (selectedCategory === 'all' || !selectedCategory) {
-      // If no category is selected, show all sub-categories
-      return subCategories.map(subCategory => subCategory.name).sort();
-    }
+  // Get level 2 categories based on selected level 1
+  const level2Categories = useMemo(() => {
+    if (selectedLevel1 === 'all') return [];
     
-    // Find the selected category and get its sub-categories
-    const selectedCategoryData = categories.find(cat => cat.name === selectedCategory);
-    if (selectedCategoryData) {
-      return selectedCategoryData.sub_categories.map(subCat => subCat.name).sort();
-    }
+    const selectedCategory = categories.find(cat => cat.id === selectedLevel1);
+    if (!selectedCategory?.children) return [];
     
-    return [];
-  }, [categories, subCategories, selectedCategory]);
+    return selectedCategory.children.map(category => ({
+      value: category.id,
+      label: category.name
+    })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [categories, selectedLevel1]);
+
+  // Get level 3 categories based on selected level 1 and 2
+  const level3Categories = useMemo(() => {
+    if (selectedLevel1 === 'all' || selectedLevel2 === 'all') return [];
+    
+    const selectedCategory = categories.find(cat => cat.id === selectedLevel1);
+    if (!selectedCategory?.children) return [];
+    
+    const selectedLevel2Category = selectedCategory.children.find(cat => cat.id === selectedLevel2);
+    if (!selectedLevel2Category?.children) return [];
+    
+    return selectedLevel2Category.children.map(category => ({
+      value: category.id,
+      label: category.name
+    })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [categories, selectedLevel1, selectedLevel2]);
+
+  // Get level 4 categories based on selected level 1, 2, and 3
+  const level4Categories = useMemo(() => {
+    if (selectedLevel1 === 'all' || selectedLevel2 === 'all' || selectedLevel3 === 'all') return [];
+    
+    const selectedCategory = categories.find(cat => cat.id === selectedLevel1);
+    if (!selectedCategory?.children) return [];
+    
+    const selectedLevel2Category = selectedCategory.children.find(cat => cat.id === selectedLevel2);
+    if (!selectedLevel2Category?.children) return [];
+    
+    const selectedLevel3Category = selectedLevel2Category.children.find(cat => cat.id === selectedLevel3);
+    if (!selectedLevel3Category?.children) return [];
+    
+    return selectedLevel3Category.children.map(category => ({
+      value: category.id,
+      label: category.name
+    })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [categories, selectedLevel1, selectedLevel2, selectedLevel3]);
+
+  // Get unique brands from product data
+  const uniqueBrands = useMemo(() => {
+    const brands = new Set<string>();
+    productData.forEach(product => {
+      if (product.brand) {
+        brands.add(product.brand);
+      }
+    });
+    return Array.from(brands).sort();
+  }, [productData]);
 
   // Column customization functions
   const handleColumnVisibilityChange = (columnKey: string, visible: boolean) => {
@@ -1461,53 +1550,108 @@ const IndexPage: React.FC = () => {
         )}
 
         {/* Filters */}
-        <Row gutter={16} style={{ marginBottom: '16px' }}>
-          <Col span={4}>
+        <Row gutter={[16, 16]} style={{ marginBottom: '16px' }}>
+          <Col xs={24} sm={12} md={8} lg={6}>
             <Input 
               placeholder="Search products..." 
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               allowClear
+              size="large"
             />
           </Col>
-          <Col span={4}>
+          <Col xs={12} sm={8} md={6} lg={3}>
             <Select 
-              placeholder="Category" 
+              placeholder="Level 1" 
               style={{ width: '100%' }}
-              value={selectedCategory}
-              onChange={handleCategoryChange}
+              value={selectedLevel1}
+              onChange={handleLevel1Change}
+              size="large"
             >
-              <Option value="all">All Categories</Option>
-              {uniqueCategories.map(category => (
-                <Option key={category} value={category}>
-                  {category}
+              <Option value="all">Level 1</Option>
+              {level1Categories.map(category => (
+                <Option key={category.value} value={category.value}>
+                  {category.label}
                 </Option>
               ))}
             </Select>
           </Col>
-          <Col span={4}>
+          <Col xs={12} sm={8} md={6} lg={3}>
             <Select 
-              placeholder="Sub Category" 
+              placeholder="Level 2" 
               style={{ width: '100%' }}
-              value={selectedSubCategory}
-              onChange={setSelectedSubCategory}
+              value={selectedLevel2}
+              onChange={handleLevel2Change}
+              disabled={selectedLevel1 === 'all'}
+              size="large"
             >
-              <Option value="all">All Sub Categories</Option>
-              {availableSubCategories.map((subCategory: string) => (
-                <Option key={subCategory} value={subCategory}>
-                  {subCategory}
+              <Option value="all">Level 2</Option>
+              {level2Categories.map(category => (
+                <Option key={category.value} value={category.value}>
+                  {category.label}
                 </Option>
               ))}
             </Select>
           </Col>
-          <Col span={4}>
+          <Col xs={12} sm={8} md={6} lg={3}>
+            <Select 
+              placeholder="Level 3" 
+              style={{ width: '100%' }}
+              value={selectedLevel3}
+              onChange={handleLevel3Change}
+              disabled={selectedLevel2 === 'all'}
+              size="large"
+            >
+              <Option value="all">Level 3</Option>
+              {level3Categories.map(category => (
+                <Option key={category.value} value={category.value}>
+                  {category.label}
+                </Option>
+              ))}
+            </Select>
+          </Col>
+          <Col xs={12} sm={8} md={6} lg={3}>
+            <Select 
+              placeholder="Level 4" 
+              style={{ width: '100%' }}
+              value={selectedLevel4}
+              onChange={handleLevel4Change}
+              disabled={selectedLevel3 === 'all'}
+              size="large"
+            >
+              <Option value="all">Level 4</Option>
+              {level4Categories.map(category => (
+                <Option key={category.value} value={category.value}>
+                  {category.label}
+                </Option>
+              ))}
+            </Select>
+          </Col>
+          <Col xs={12} sm={8} md={6} lg={3}>
+            <Select 
+              placeholder="Brand" 
+              style={{ width: '100%' }}
+              value={selectedBrandFilter}
+              onChange={setSelectedBrandFilter}
+              size="large"
+            >
+              <Option value="all">Brand</Option>
+              {uniqueBrands.map(brand => (
+                <Option key={brand} value={brand}>
+                  {brand}
+                </Option>
+              ))}
+            </Select>
+          </Col>
+          <Col xs={12} sm={8} md={6} lg={3}>
             <Select 
               placeholder="Competitor" 
               style={{ width: '100%' }}
               value={selectedCompetitorFilter}
               onChange={setSelectedCompetitorFilter}
+              size="large"
             >
-              <Option value="all">All Competitors</Option>
+              <Option value="all">Competitor</Option>
               {competitors.map(competitor => (
                 <Option key={competitor.id} value={competitor.id}>
                   {competitor.name}
@@ -1515,14 +1659,15 @@ const IndexPage: React.FC = () => {
               ))}
             </Select>
           </Col>
-          <Col span={4}>
+          <Col xs={12} sm={8} md={6} lg={3}>
             <Select 
               placeholder="Discounted" 
               style={{ width: '100%' }}
               value={selectedDiscountedFilter}
               onChange={setSelectedDiscountedFilter}
+              size="large"
             >
-              <Option value="all">All Products</Option>
+              <Option value="all">Products</Option>
               <Option value="discounted">Discounted Only</Option>
               <Option value="not-discounted">Not Discounted</Option>
             </Select>

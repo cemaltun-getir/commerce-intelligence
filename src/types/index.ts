@@ -164,14 +164,8 @@ export interface Category {
   id: string;
   name: string;
   created_at: string;
-  sub_categories_count: number;
   skus_count: number;
-  sub_categories: {
-    id: string;
-    name: string;
-    created_at: string;
-    skus_count: number;
-  }[];
+  children?: Category[];
 }
 
 export interface SubCategory {

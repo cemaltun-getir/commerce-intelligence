@@ -29,6 +29,7 @@ interface AppState {
   // Category data
   categories: Category[];
   subCategories: SubCategory[];
+  flattenedCategories: Array<Category & { level: number; path: string; fullPath: string }>;
   
   // Segment data
   segments: Segment[];
@@ -107,6 +108,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   productMatches: [],
   categories: [],
   subCategories: [],
+  flattenedCategories: [],
   segments: [],
   warehouses: [],
   priceLocations: [],
@@ -319,10 +321,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   // External API actions
-  fetchProducts: async () => {
+  fetchProducts: async (categoryFilters?: {
+    category_level1_id?: string;
+    category_level2_id?: string;
+    category_level3_id?: string;
+    category_level4_id?: string;
+  }) => {
     try {
       get().startLoading('products');
-      const products = await externalApi.getProducts();
+      const products = await externalApi.getProducts(categoryFilters);
       set({ products });
       get().stopLoading('products');
     } catch (error) {
@@ -359,7 +366,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       get().startLoading('categories');
       const categories = await externalApi.getCategories();
-      set({ categories });
+      const flattenedCategories = externalApi.flattenCategories(categories);
+      set({ categories, flattenedCategories });
       get().stopLoading('categories');
     } catch (error) {
       console.error('Failed to fetch categories:', error);

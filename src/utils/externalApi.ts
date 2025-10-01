@@ -27,9 +27,29 @@ export const transformExternalWarehouse = (externalWarehouse: ExternalWarehouse)
 
 export const externalApi = {
   // Get all products (SKUs) - via internal API proxy
-  async getProducts(): Promise<Product[]> {
+  async getProducts(categoryFilters?: {
+    category_level1_id?: string;
+    category_level2_id?: string;
+    category_level3_id?: string;
+    category_level4_id?: string;
+  }): Promise<Product[]> {
     try {
-      const response = await fetch('/api/external-products');
+      let url = '/api/external-products';
+      
+      // Add category filter parameters if provided
+      if (categoryFilters) {
+        const params = new URLSearchParams();
+        if (categoryFilters.category_level1_id) params.append('category_level1_id', categoryFilters.category_level1_id);
+        if (categoryFilters.category_level2_id) params.append('category_level2_id', categoryFilters.category_level2_id);
+        if (categoryFilters.category_level3_id) params.append('category_level3_id', categoryFilters.category_level3_id);
+        if (categoryFilters.category_level4_id) params.append('category_level4_id', categoryFilters.category_level4_id);
+        
+        if (params.toString()) {
+          url += `?${params.toString()}`;
+        }
+      }
+      
+      const response = await fetch(url);
       
       if (!response.ok) {
         throw new Error(`Products API responded with status: ${response.status}`);
@@ -72,6 +92,29 @@ export const externalApi = {
       console.error('Error fetching categories:', error);
       throw new Error('Failed to fetch categories');
     }
+  },
+
+  // Flatten hierarchical categories into a flat list with level information
+  flattenCategories(categories: Category[], level: number = 0, parentPath: string = ''): Array<Category & { level: number; path: string; fullPath: string }> {
+    const flattened: Array<Category & { level: number; path: string; fullPath: string }> = [];
+    
+    categories.forEach(category => {
+      const currentPath = parentPath ? `${parentPath} > ${category.name}` : category.name;
+      const fullPath = currentPath;
+      
+      flattened.push({
+        ...category,
+        level,
+        path: category.name,
+        fullPath
+      });
+      
+      if (category.children && category.children.length > 0) {
+        flattened.push(...this.flattenCategories(category.children, level + 1, currentPath));
+      }
+    });
+    
+    return flattened;
   },
 
   // Get all price mappings - via internal API proxy

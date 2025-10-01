@@ -4,7 +4,28 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   try {
     const externalApiBase = process.env.EXTERNAL_API_BASE_URL || 'http://localhost:3001/api/external';
-    const response = await fetch(`${externalApiBase}/skus`);
+    
+    // Get query parameters from the request
+    const { searchParams } = new URL(request.url);
+    const categoryLevel1Id = searchParams.get('category_level1_id');
+    const categoryLevel2Id = searchParams.get('category_level2_id');
+    const categoryLevel3Id = searchParams.get('category_level3_id');
+    const categoryLevel4Id = searchParams.get('category_level4_id');
+    
+    // Build the external API URL with query parameters
+    let externalUrl = `${externalApiBase}/skus`;
+    const params = new URLSearchParams();
+    
+    if (categoryLevel1Id) params.append('category_level1_id', categoryLevel1Id);
+    if (categoryLevel2Id) params.append('category_level2_id', categoryLevel2Id);
+    if (categoryLevel3Id) params.append('category_level3_id', categoryLevel3Id);
+    if (categoryLevel4Id) params.append('category_level4_id', categoryLevel4Id);
+    
+    if (params.toString()) {
+      externalUrl += `?${params.toString()}`;
+    }
+    
+    const response = await fetch(externalUrl);
     
     if (!response.ok) {
       throw new Error(`External API responded with status: ${response.status}`);
