@@ -169,7 +169,7 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
     return availableWarehouses.map(warehouse => ({
       key: warehouse.id,
       title: warehouse.name,
-      description: `${warehouse.province}, ${warehouse.district} - ${warehouse.domain}`,
+      description: `${warehouse.province}, ${warehouse.district} - ${warehouse.domains?.join(', ') || 'No domains'}`,
       chosen: selectedWarehouses.includes(warehouse.id)
     }));
   };
@@ -206,12 +206,15 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
             gap: '4px',
             flexWrap: 'wrap'
           }}>
-            <Tag 
-              color={getDomainColor(warehouse.domain)} 
-              style={{ fontSize: '11px', margin: '0 2px 2px 0' }}
-            >
-              {warehouse.domain}
-            </Tag>
+            {(warehouse.domains || []).map((domain, idx) => (
+              <Tag
+                key={idx}
+                color={getDomainColor(domain)}
+                style={{ fontSize: '11px', margin: '0 2px 2px 0' }}
+              >
+                {domain}
+              </Tag>
+            ))}
             <Tag 
               color="orange" 
               style={{ fontSize: '11px', margin: '0 2px 2px 0' }}
@@ -400,7 +403,7 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
                   onChange={(value) => setWarehouseFilter(prev => ({ ...prev, domain: value || '' }))}
                   allowClear
                 >
-                  {[...new Set(getAvailableWarehouses().map(w => w.domain))].sort().map(domain => (
+                  {[...new Set(getAvailableWarehouses().flatMap(w => w.domains || []))].sort().map(domain => (
                     <Option key={domain} value={domain}>{domain}</Option>
                   ))}
                 </Select>
@@ -468,7 +471,7 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
               const warehouse = availableWarehouses.find(w => w.id === item.key);
               if (!warehouse) return false;
               
-              return (!warehouseFilter.domain || warehouse.domain === warehouseFilter.domain) &&
+              return (!warehouseFilter.domain || (warehouse.domains || []).includes(warehouseFilter.domain as any)) &&
                      (!warehouseFilter.region || warehouse.region === warehouseFilter.region) &&
                      (!warehouseFilter.city || warehouse.province === warehouseFilter.city) &&
                      (!warehouseFilter.size || warehouse.size === warehouseFilter.size) &&
@@ -556,7 +559,7 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
                   <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#52c41a' }}>
                     {[...new Set(warehouses
                       .filter(w => selectedWarehouses.includes(w.id))
-                      .map(w => w.domain)
+                      .flatMap(w => w.domains || [])
                     )].length}
                   </div>
                   <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>Domains</div>
@@ -606,7 +609,7 @@ const SegmentFormPage: React.FC<SegmentFormPageProps> = ({ segmentId }) => {
                 <div style={{ marginTop: '8px' }}>
                   {[...new Set(warehouses
                     .filter(w => selectedWarehouses.includes(w.id))
-                    .map(w => w.domain)
+                    .flatMap(w => w.domains || [])
                   )].map(domain => (
                     <Tag key={domain} color={getDomainColor(domain)} style={{ margin: '2px' }}>
                       {domain}

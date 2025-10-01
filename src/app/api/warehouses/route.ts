@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       );
     }
     if (domain) {
-      filteredWarehouses = filteredWarehouses.filter(w => w.domain === domain);
+      filteredWarehouses = filteredWarehouses.filter(w => (w.domains || []).includes(domain as any));
     }
     if (demography) {
       filteredWarehouses = filteredWarehouses.filter(w => w.demography === demography);
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       district: body.district,
       demography: body.demography,
       size: body.size,
-      domain: body.domain
+      domains: body.domains || [body.domain] // Support both new multiple domains and legacy single domain
     });
     
     const savedWarehouse = await warehouse.save();
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       district: savedWarehouse.district,
       demography: savedWarehouse.demography,
       size: savedWarehouse.size,
-      domain: savedWarehouse.domain
+      domains: savedWarehouse.domains
     };
     
     return NextResponse.json(transformedWarehouse, { status: 201 });

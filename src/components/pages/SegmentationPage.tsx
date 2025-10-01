@@ -102,11 +102,11 @@ const SegmentationPage: React.FC = () => {
       );
     }
 
-    // Domains filter
+    // Domains filter - AND logic: warehouse must have ALL selected domains
     if (filters.domains.length > 0) {
       filtered = filtered.filter((item: Segment) =>
-        item.domains?.some(domain => 
-          filters.domains.some(filterDomain => 
+        filters.domains.every(filterDomain =>
+          item.domains?.some(domain => 
             domain.toLowerCase() === filterDomain.toLowerCase()
           )
         )

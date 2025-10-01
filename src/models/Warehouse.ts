@@ -7,7 +7,7 @@ export interface IWarehouse extends Document {
   region: string;
   demography: 'Upper Premium' | 'Premium' | 'Upper Medium' | 'Medium' | 'Lower Medium' | 'Mass';
   size: 'Micro' | 'Mini' | 'Midi' | 'Maxi' | 'GB Midi' | 'GB Maxi';
-  domain: 'Getir' | 'Getir Büyük' | 'Getir Express' | 'Getir Market';
+  domains: ('Getir' | 'Getir Büyük' | 'Getir Express' | 'Getir Market')[];
 }
 
 const WarehouseSchema: Schema = new Schema({
@@ -41,11 +41,11 @@ const WarehouseSchema: Schema = new Schema({
     required: true,
     enum: ['Micro', 'Mini', 'Midi', 'Maxi', 'GB Midi', 'GB Maxi']
   },
-  domain: {
+  domains: [{
     type: String,
     required: true,
     enum: ['Getir', 'Getir Büyük', 'Getir Express', 'Getir Market']
-  }
+  }]
 }, {
   timestamps: true
 });

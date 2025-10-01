@@ -57,7 +57,7 @@ export async function PUT(
         district: body.district,
         demography: body.demography,
         size: body.size,
-        domain: body.domain
+        domains: body.domains || [body.domain] // Support both new multiple domains and legacy single domain
       },
       { new: true, runValidators: true }
     );
@@ -77,7 +77,7 @@ export async function PUT(
       district: updatedWarehouse.district,
       demography: updatedWarehouse.demography,
       size: updatedWarehouse.size,
-      domain: updatedWarehouse.domain
+      domains: updatedWarehouse.domains
     };
     
     return NextResponse.json(transformedWarehouse);

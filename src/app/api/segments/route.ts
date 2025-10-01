@@ -5,13 +5,13 @@ import { Warehouse } from '@/types';
 
 // Helper function to calculate segment data from warehouses
 function calculateSegmentData(warehouses: Warehouse[]) {
-  const domains = [...new Set(warehouses.map(w => w.domain))];
+  const domains = [...new Set(warehouses.flatMap(w => w.domains || []))];
   const provinces = [...new Set(warehouses.map(w => w.province))];
   const districts = [...new Set(warehouses.map(w => w.district))];
   const regions = [...new Set(warehouses.map(w => w.region))];
   const demographies = [...new Set(warehouses.map(w => w.demography))];
   const sizes = [...new Set(warehouses.map(w => w.size))];
-  
+
   return { domains, provinces, districts, regions, demographies, sizes };
 }
 
@@ -36,7 +36,7 @@ async function getWarehousesByIds(warehouseIds: string[]): Promise<Warehouse[]> 
       region: warehouse.region,
       demography: warehouse.demography,
       size: warehouse.size,
-      domain: warehouse.domain
+      domains: warehouse.domains || [warehouse.domain] // Support both new multiple domains and legacy single domain
     }));
     
     return warehouses.filter(w => warehouseIds.includes(w.id));

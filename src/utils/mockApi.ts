@@ -70,7 +70,7 @@ export const mockWarehouses: Warehouse[] = [
     region: 'Marmara',
     demography: 'Premium',
     size: 'Maxi',
-    domain: 'Getir'
+    domains: ['Getir']
   },
   {
     id: 'wh_002', 
@@ -80,7 +80,7 @@ export const mockWarehouses: Warehouse[] = [
     region: 'Marmara',
     demography: 'Premium',
     size: 'Midi',
-    domain: 'Getir'
+    domains: ['Getir']
   },
   {
     id: 'wh_003',
@@ -90,7 +90,7 @@ export const mockWarehouses: Warehouse[] = [
     region: 'Central Anatolia',
     demography: 'Premium',
     size: 'Midi',
-    domain: 'Getir'
+    domains: ['Getir']
   },
   {
     id: 'wh_004',
@@ -100,7 +100,7 @@ export const mockWarehouses: Warehouse[] = [
     region: 'Aegean',
     demography: 'Premium',
     size: 'Maxi',
-    domain: 'Getir'
+    domains: ['Getir']
   },
   {
     id: 'wh_005',
@@ -110,7 +110,7 @@ export const mockWarehouses: Warehouse[] = [
     region: 'Marmara',
     demography: 'Medium',
     size: 'Mini',
-    domain: 'Getir'
+    domains: ['Getir']
   },
   {
     id: 'wh_006',
@@ -120,7 +120,7 @@ export const mockWarehouses: Warehouse[] = [
     region: 'Mediterranean',
     demography: 'Premium',
     size: 'Midi',
-    domain: 'Getir'
+    domains: ['Getir']
   },
   {
     id: 'wh_007',
@@ -130,7 +130,7 @@ export const mockWarehouses: Warehouse[] = [
     region: 'Mediterranean',
     demography: 'Premium',
     size: 'Maxi',
-    domain: 'Getir'
+    domains: ['Getir']
   },
   {
     id: 'wh_008',
@@ -140,7 +140,7 @@ export const mockWarehouses: Warehouse[] = [
     region: 'Southeastern Anatolia',
     demography: 'Medium',
     size: 'Midi',
-    domain: 'Getir'
+    domains: ['Getir']
   },
   {
     id: 'wh_009',
@@ -150,7 +150,7 @@ export const mockWarehouses: Warehouse[] = [
     region: 'Marmara',
     demography: 'Medium',
     size: 'Mini',
-    domain: 'Getir'
+    domains: ['Getir']
   },
   {
     id: 'wh_010',
@@ -160,7 +160,7 @@ export const mockWarehouses: Warehouse[] = [
     region: 'Mediterranean',
     demography: 'Premium',
     size: 'GB Maxi',
-    domain: 'Getir'
+    domains: ['Getir']
   },
   {
     id: 'wh_011',
@@ -170,7 +170,7 @@ export const mockWarehouses: Warehouse[] = [
     region: 'Central Anatolia',
     demography: 'Medium',
     size: 'Mini',
-    domain: 'Getir'
+    domains: ['Getir']
   },
   {
     id: 'wh_012',
@@ -180,7 +180,7 @@ export const mockWarehouses: Warehouse[] = [
     region: 'Black Sea',
     demography: 'Premium',
     size: 'Midi',
-    domain: 'Getir'
+    domains: ['Getir']
   }
 ];
 

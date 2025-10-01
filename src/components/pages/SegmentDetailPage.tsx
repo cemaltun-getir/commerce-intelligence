@@ -65,7 +65,7 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
       .filter(Boolean) as Warehouse[];
     
     return {
-      domains: [...new Set(segmentWarehouses.map(w => w.domain))].sort(),
+      domains: [...new Set(segmentWarehouses.flatMap(w => w.domains || []))].sort(),
       demographies: [...new Set(segmentWarehouses.map(w => w.demography))].sort(),
       sizes: [...new Set(segmentWarehouses.map(w => w.size))].sort()
     };
@@ -89,8 +89,8 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
         if (!matchesSearch) return false;
       }
       
-      // Domain filter
-      if (domainFilter && warehouse.domain !== domainFilter) {
+      // Domain filter - single domain selection
+      if (domainFilter && !(warehouse.domains || []).includes(domainFilter as any)) {
         return false;
       }
       
@@ -487,20 +487,23 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
                       
                       <Col flex="none">
                         <Space size="small">
-                          <Tag 
-                            color={getDomainColor(warehouse.domain)} 
-                            style={{ fontSize: '11px' }}
-                          >
-                            {warehouse.domain}
-                          </Tag>
-                          <Tag 
-                            color={getOperationalColor('size')} 
+                          {(warehouse.domains || []).map((domain, idx) => (
+                            <Tag
+                              key={idx}
+                              color={getDomainColor(domain)}
+                              style={{ fontSize: '11px' }}
+                            >
+                              {domain}
+                            </Tag>
+                          ))}
+                          <Tag
+                            color={getOperationalColor('size')}
                             style={{ fontSize: '11px' }}
                           >
                             {warehouse.size}
                           </Tag>
-                          <Tag 
-                            color={getOperationalColor('demography')} 
+                          <Tag
+                            color={getOperationalColor('demography')}
                             style={{ fontSize: '11px' }}
                           >
                             {warehouse.demography}

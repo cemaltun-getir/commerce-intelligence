@@ -58,7 +58,7 @@ const WarehousePage: React.FC = () => {
       ) &&
       (!filters.city || warehouse.province === filters.city) &&
       (!filters.region || warehouse.region === filters.region) &&
-      (!filters.domain || warehouse.domain === filters.domain) &&
+      (!filters.domain || (warehouse.domains || []).includes(filters.domain as any)) &&
       (!filters.demography || warehouse.demography === filters.demography) &&
       (!filters.size || warehouse.size === filters.size)
     );
@@ -125,9 +125,9 @@ const WarehousePage: React.FC = () => {
     },
     {
       title: 'Domain',
-      dataIndex: 'domain',
-      key: 'domain',
-      render: (domain: string) => {
+      dataIndex: 'domains',
+      key: 'domains',
+      render: (domains: string[]) => {
         const colorMap: Record<string, string> = {
           'Getir': 'blue',
           'Getir Büyük': 'green',
@@ -135,16 +135,24 @@ const WarehousePage: React.FC = () => {
           'Getir Market': 'purple'
         };
         return (
-          <Tag color={colorMap[domain] || 'default'}>
-            {domain}
-          </Tag>
+          <Space wrap>
+            {domains && domains.length > 0 ? (
+              domains.map((domain, index) => (
+                <Tag key={index} color={colorMap[domain] || 'default'}>
+                  {domain}
+                </Tag>
+              ))
+            ) : (
+              <Tag color="default">No Domain</Tag>
+            )}
+          </Space>
         );
       },
-      filters: [...new Set(warehouses.map(w => w.domain))].map(domain => ({
+      filters: [...new Set(warehouses.flatMap(w => w.domains || []))].map(domain => ({
         text: domain,
         value: domain
       })),
-      onFilter: (value, record) => record.domain === value
+      onFilter: (value, record) => (record.domains || []).includes(value as any)
     },
     {
       title: 'Size',
@@ -235,7 +243,7 @@ const WarehousePage: React.FC = () => {
           <Card>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#52c41a' }}>
-                {warehouses.filter(w => w.domain === 'Getir').length}
+                {warehouses.filter(w => (w.domains || []).includes('Getir')).length}
               </div>
               <div style={{ color: '#666' }}>Getir</div>
             </div>
@@ -245,7 +253,7 @@ const WarehousePage: React.FC = () => {
           <Card>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#fa8c16' }}>
-                {warehouses.filter(w => w.domain === 'Getir Büyük').length}
+                {warehouses.filter(w => (w.domains || []).includes('Getir Büyük')).length}
               </div>
               <div style={{ color: '#666' }}>Getir Büyük</div>
             </div>
@@ -309,7 +317,7 @@ const WarehousePage: React.FC = () => {
               onChange={handleDomainChange}
               allowClear
             >
-              {[...new Set(warehouses.map(w => w.domain))].map(domain => (
+              {[...new Set(warehouses.flatMap(w => w.domains || []))].map(domain => (
                 <Option key={domain} value={domain}>{domain}</Option>
               ))}
             </Select>

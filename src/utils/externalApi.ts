@@ -10,7 +10,7 @@ interface ExternalWarehouse {
   region: string;
   demography: string;
   size: string;
-  domain: string;
+  domains: string[];
 }
 
 // Transform external warehouse format to internal format
@@ -22,7 +22,7 @@ export const transformExternalWarehouse = (externalWarehouse: ExternalWarehouse)
   region: externalWarehouse.region,
   demography: externalWarehouse.demography as Warehouse['demography'],
   size: externalWarehouse.size as Warehouse['size'],
-  domain: externalWarehouse.domain as Warehouse['domain']
+  domains: externalWarehouse.domains as Warehouse['domains']
 });
 
 export const externalApi = {
