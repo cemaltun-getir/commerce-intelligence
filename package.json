@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "migrate:segments": "node scripts/migrate-segments.js",
-    "heroku-postbuild": "npm run build"
+    "heroku-postbuild": "npm ci && npm run build"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
@@ -42,7 +42,7 @@
     "ts-node": "^10.9.1"
   },
   "engines": {
-    "node": "18.x",
-    "npm": "8.x"
+    "node": "20.x",
+    "npm": "10.x"
   }
 }

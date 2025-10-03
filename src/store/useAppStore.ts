@@ -93,7 +93,12 @@ interface AppState {
   fetchPriceLocations: () => Promise<void>;
   
   // External API actions
-  fetchProducts: () => Promise<void>;
+  fetchProducts: (categoryFilters?: {
+    category_level1_id?: string;
+    category_level2_id?: string;
+    category_level3_id?: string;
+    category_level4_id?: string;
+  }) => Promise<void>;
   fetchVendors: () => Promise<void>;
   fetchCompetitorPrices: () => Promise<void>;
   fetchCategories: () => Promise<void>;
