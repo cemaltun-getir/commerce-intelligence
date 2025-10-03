@@ -649,59 +649,6 @@ const IndexPage: React.FC = () => {
       onClick: () => handleExport('csv'),
     },
     {
-      title: 'Selling Price',
-      dataIndex: 'sellingPrice',
-      key: 'sellingPrice',
-      width: 140,
-      align: 'center' as const,
-      render: (price: number | null | undefined) => {
-        if (price === null || price === undefined) {
-          return (
-            <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
-              No data
-            </div>
-          );
-        }
-        return (
-          <div style={{ color: '#722ed1', fontWeight: 'bold' }}>
-            ₺{price.toFixed(2)}
-            <div style={{ fontSize: '10px', color: '#999' }}>
-              (With VAT)
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      title: (
-        <div>
-          <div>Selling Price</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>w/o VAT</div>
-        </div>
-      ),
-      dataIndex: 'sellingPriceWithoutVat',
-      key: 'sellingPriceWithoutVat',
-      width: 160,
-      align: 'center' as const,
-      render: (price: number | null | undefined) => {
-        if (price === null || price === undefined) {
-          return (
-            <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
-              No data
-            </div>
-          );
-        }
-        return (
-          <div style={{ color: '#13c2c2', fontWeight: 'bold' }}>
-            ₺{price.toFixed(2)}
-            <div style={{ fontSize: '10px', color: '#999' }}>
-              (Without VAT)
-            </div>
-          </div>
-        );
-      },
-    },
-    {
       key: 'xlsx', 
       label: selectedRowKeys.length > 0 
         ? `Export ${selectedRowKeys.length} selected as Excel`
