@@ -16,6 +16,10 @@ export interface Product {
   buying_price?: number;
   buying_vat?: number;
   buying_price_without_vat?: number;
+  // New selling price fields from SKU API
+  selling_price?: number;
+  selling_vat?: number;
+  selling_price_without_vat?: number;
 }
 
 export interface Competitor {

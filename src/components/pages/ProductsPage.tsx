@@ -78,8 +78,20 @@ const ALL_COLUMNS = [
     defaultVisible: true,
   },
   {
+    key: 'sellingPrice',
+    title: 'Selling Price',
+    width: 140,
+    defaultVisible: true,
+  },
+  {
+    key: 'sellingPriceWithoutVat',
+    title: 'Selling Price (w/o VAT)',
+    width: 160,
+    defaultVisible: true,
+  },
+  {
     key: 'getirUnitPrice',
-    title: 'Getir Unit Price',
+    title: 'IX Price',
     width: 140,
     defaultVisible: true,
   },
@@ -355,40 +367,14 @@ const ProductsPage: React.FC = () => {
   };
 
   // Calculate Getir Unit Price based on competitor price and index value
-  // Now location-aware - prices vary by segment's price location
-  const calculateGetirPrice = (competitorPrice: number, indexValue: number, segmentPriceLocation?: string): number => {
-    // If no price location, cannot calculate price
-    if (!segmentPriceLocation) {
-      return 0; // Will be handled as null in the calling code
-    }
-
-    // Apply location-based pricing adjustment first
-    const locationAdjustedPrice = getLocationBasedPrice(competitorPrice, segmentPriceLocation);
-    
-    // Then apply index value calculation
+  // Competitor price is already location-specific from API
+  const calculateGetirPrice = (competitorPrice: number, indexValue: number): number => {
     // Index value represents percentage relative to competitor
     // 100 = same price, 105 = 5% higher, 95 = 5% lower
-    const basePrice = locationAdjustedPrice * (indexValue / 100);
+    const basePrice = competitorPrice * (indexValue / 100);
     
     // Apply special rounding logic
     return applyGetirRounding(basePrice);
-  };
-
-  // Location-based pricing adjustment (same logic as backend)
-  const getLocationBasedPrice = (basePrice: number, location: string): number => {
-    const locationMultipliers: Record<string, number> = {
-      istanbul: 1.0,      // Base price
-      ankara: 0.95,       // 5% lower
-      izmir: 0.98,        // 2% lower  
-      antalya: 1.02,      // 2% higher
-      bursa: 0.97,        // 3% lower
-      adana: 0.93,        // 7% lower
-      gaziantep: 0.90,    // 10% lower
-      konya: 0.92         // 8% lower
-    };
-    
-    const multiplier = locationMultipliers[location] || 1.0;
-    return Math.round(basePrice * multiplier * 100) / 100; // Round to 2 decimals
   };
 
   // Get competitor display name by ID
@@ -464,21 +450,19 @@ const ProductsPage: React.FC = () => {
           buyingPrice: product?.buying_price,
           buyingVat: product?.buying_vat,
           buyingPriceWithoutVat: product?.buying_price_without_vat,
+          // New selling price fields from SKU API
+          sellingPrice: product?.selling_price,
+          sellingVat: product?.selling_vat,
+          sellingPriceWithoutVat: product?.selling_price_without_vat,
         };
 
         const kviType = getKviTypeFromLabel(baseProduct.kviLabel);
         const ix = getIndexValue(segment.id, kviType, baseProduct.competitorId, activeChannel);
         
-        // Apply location-based adjustment to competitor price for this segment
-        // If no priceLocation is set, don't show any price
-        const locationAdjustedCompetitorPrice = segment.priceLocation 
-          ? getLocationBasedPrice(baseProduct.competitorPrice, segment.priceLocation)
-          : null;
-        
-        // Calculate Getir Unit Price based on location-adjusted competitor price and index value
-        // Only calculate if IX value exists (not null for new segments) AND segment has priceLocation
-        const calculatedGetirPrice = (ix !== null && segment.priceLocation) 
-          ? calculateGetirPrice(baseProduct.competitorPrice, ix, segment.priceLocation) 
+        // Calculate Getir Unit Price using location-specific competitor price from API
+        // Only calculate if IX value exists (not null for new segments)
+        const calculatedGetirPrice = ix !== null 
+          ? calculateGetirPrice(baseProduct.competitorPrice, ix) 
           : null;
         
         // Only include products that have index values (restore previous behavior)
@@ -486,7 +470,7 @@ const ProductsPage: React.FC = () => {
           expandedProductData.push({
             key: keyCounter.toString(),
             ...baseProduct,
-            competitorPrice: locationAdjustedCompetitorPrice, // Use location-adjusted price for display
+            competitorPrice: baseProduct.competitorPrice, // Use location-specific price from API
             id: `${baseProduct.id}_${segment.id}`, // Unique ID per segment
             competitor: getCompetitorDisplayName(baseProduct.competitorId),
             kviType,
@@ -504,6 +488,10 @@ const ProductsPage: React.FC = () => {
             buyingPrice: baseProduct.buyingPrice,
             buyingVat: baseProduct.buyingVat,
             buyingPriceWithoutVat: baseProduct.buyingPriceWithoutVat,
+            // New selling price fields from SKU API
+            sellingPrice: baseProduct.sellingPrice,
+            sellingVat: baseProduct.sellingVat,
+            sellingPriceWithoutVat: baseProduct.sellingPriceWithoutVat,
           });
           keyCounter++;
         }
@@ -1062,7 +1050,60 @@ const ProductsPage: React.FC = () => {
       },
     },
     {
-      title: 'Getir Unit Price',
+      title: 'Selling Price',
+      dataIndex: 'sellingPrice',
+      key: 'sellingPrice',
+      width: 140,
+      align: 'center' as const,
+      render: (price: number | null | undefined) => {
+        if (price === null || price === undefined) {
+          return (
+            <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
+              No data
+            </div>
+          );
+        }
+        return (
+          <div style={{ color: '#722ed1', fontWeight: 'bold' }}>
+            ₺{price.toFixed(2)}
+            <div style={{ fontSize: '10px', color: '#999' }}>
+              (With VAT)
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      title: (
+        <div>
+          <div>Selling Price</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>w/o VAT</div>
+        </div>
+      ),
+      dataIndex: 'sellingPriceWithoutVat',
+      key: 'sellingPriceWithoutVat',
+      width: 160,
+      align: 'center' as const,
+      render: (price: number | null | undefined) => {
+        if (price === null || price === undefined) {
+          return (
+            <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
+              No data
+            </div>
+          );
+        }
+        return (
+          <div style={{ color: '#13c2c2', fontWeight: 'bold' }}>
+            ₺{price.toFixed(2)}
+            <div style={{ fontSize: '10px', color: '#999' }}>
+              (Without VAT)
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      title: 'IX Price',
       dataIndex: 'getirUnitPrice',
       key: 'getirUnitPrice',
       width: 140,
