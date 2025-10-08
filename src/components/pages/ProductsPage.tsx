@@ -170,8 +170,11 @@ const ProductsPage: React.FC = () => {
   // Column order state
   const [columnOrder, setColumnOrder] = useState<string[]>(() => {
     // Always start with default order to avoid hydration mismatch
-    // Use the exact order from ALL_COLUMNS array
-    return ALL_COLUMNS.map(col => col.key);
+    const alwaysVisible = ALL_COLUMNS.filter(col => col.alwaysVisible).map(col => col.key);
+    const defaultVisible = ALL_COLUMNS.filter(col => col.defaultVisible && !col.alwaysVisible).map(col => col.key);
+    const others = ALL_COLUMNS.filter(col => !col.defaultVisible && !col.alwaysVisible).map(col => col.key);
+    
+    return [...alwaysVisible, ...defaultVisible, ...others];
   });
 
   // Load saved preferences after component mounts (client-side only)
@@ -767,8 +770,11 @@ const ProductsPage: React.FC = () => {
   };
 
   const resetColumnOrder = () => {
-    // Use the exact order from ALL_COLUMNS array
-    const defaultOrder = ALL_COLUMNS.map(col => col.key);
+    const alwaysVisible = ALL_COLUMNS.filter(col => col.alwaysVisible).map(col => col.key);
+    const defaultVisible = ALL_COLUMNS.filter(col => col.defaultVisible && !col.alwaysVisible).map(col => col.key);
+    const others = ALL_COLUMNS.filter(col => !col.defaultVisible && !col.alwaysVisible).map(col => col.key);
+    
+    const defaultOrder = [...alwaysVisible, ...defaultVisible, ...others];
     setColumnOrder(defaultOrder);
     
     // Save to localStorage
