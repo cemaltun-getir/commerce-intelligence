@@ -8,8 +8,10 @@ import {
   Row,
   Col,
   Card,
+  Button,
+  Tag,
 } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined, EditOutlined } from '@ant-design/icons';
 import { useAppStore } from '@/store/useAppStore';
 import ClientOnlyTable from '../common/ClientOnlyTable';
 
@@ -21,6 +23,11 @@ const IndexesPage: React.FC = () => {
   
   // Search and filter state
   const [searchText, setSearchText] = useState('');
+  
+  // Edit mode state for index table
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState<Record<string, number>>({});
+  const [originalValues, setOriginalValues] = useState<Record<string, number>>({});
   
   // Connect to store
   const { 
@@ -58,6 +65,48 @@ const IndexesPage: React.FC = () => {
   const handleChannelChange = (channel: string) => {
     setActiveChannel(channel);
     setActiveSalesChannel(channel as 'getir' | 'getirbuyuk');
+  };
+
+  // Handle entering edit mode
+  const handleEditMode = () => {
+    // Store original values before editing
+    const original: Record<string, number> = {};
+    indexData.forEach(segment => {
+      const kviTypes = ['SKVI', 'KVI', 'Background', 'Foreground'] as const;
+      kviTypes.forEach(kviType => {
+        const changeKey = `${segment.segmentId}-${kviType}-${activeTab}-${activeChannel}`;
+        const existingValue = indexValues.find(iv => 
+          iv.segmentId === segment.segmentId &&
+          iv.kviType === kviType &&
+          iv.competitorId === activeTab &&
+          iv.salesChannel === activeChannel
+        );
+        original[changeKey] = existingValue?.value ?? 0;
+      });
+    });
+    setOriginalValues(original);
+    setPendingChanges({});
+    setIsEditMode(true);
+  };
+
+  // Handle canceling edit mode
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    setPendingChanges({});
+    setOriginalValues({});
+  };
+
+  // Handle saving changes
+  const handleSaveChanges = () => {
+    // Apply all pending changes
+    Object.entries(pendingChanges).forEach(([changeKey, value]) => {
+      const [segmentId, kviType, competitorId, salesChannel] = changeKey.split('-');
+      updateIndexValue(segmentId, kviType as 'SKVI' | 'KVI' | 'Background' | 'Foreground', competitorId, value);
+    });
+    
+    setIsEditMode(false);
+    setPendingChanges({});
+    setOriginalValues({});
   };
 
   // Create dynamic index data from segments and indexValues
@@ -108,7 +157,18 @@ const IndexesPage: React.FC = () => {
     kviType: 'SKVI' | 'KVI' | 'Background' | 'Foreground'
   ) => {
     const numericValue = parseFloat(value) || 0;
-    updateIndexValue(segmentId, kviType, activeTab, numericValue);
+    const changeKey = `${segmentId}-${kviType}-${activeTab}-${activeChannel}`;
+    
+    if (isEditMode) {
+      // In edit mode, track pending changes
+      setPendingChanges(prev => ({
+        ...prev,
+        [changeKey]: numericValue
+      }));
+    } else {
+      // Not in edit mode, save immediately (fallback)
+      updateIndexValue(segmentId, kviType, activeTab, numericValue);
+    }
   };
 
   // Sales channel tabs items
@@ -161,10 +221,16 @@ const IndexesPage: React.FC = () => {
         align: 'center' as const,
         render: (value: number | string, record: Record<string, string | number>) => {
           const segmentId = record.segmentId as string;
+          const changeKey = `${segmentId}-${kviType}-${activeTab}-${activeChannel}`;
+          
+          // Use pending change value if in edit mode, otherwise use original value
+          const displayValue = isEditMode && pendingChanges[changeKey] !== undefined 
+            ? pendingChanges[changeKey] 
+            : value;
           
           return (
             <Input 
-              value={value === '' ? '' : value} 
+              value={displayValue === '' ? '' : displayValue} 
               placeholder="100"
               style={{ textAlign: 'center', width: '100px' }}
               size="small"
@@ -172,6 +238,8 @@ const IndexesPage: React.FC = () => {
               type="number"
               min={0}
               step={1}
+              readOnly={!isEditMode}
+              disabled={!isEditMode}
             />
           );
         },
@@ -205,11 +273,63 @@ const IndexesPage: React.FC = () => {
 
       {/* Index Chart Card */}
       <Card>
-        <div style={{ marginBottom: '16px' }}>
-          <Title level={4} style={{ margin: 0 }}>Index Values by Segment</Title>
-          <Text type="secondary">
-            Set index values for each segment across different KVI types. Each row represents a segment, and each column represents a KVI type. Values represent percentage relative to competitor prices.
-          </Text>
+        <div style={{ marginBottom: '16px', position: 'relative' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ flex: 1, paddingRight: '16px' }}>
+              <Title level={4} style={{ margin: 0 }}>
+                Index Values by Segment
+                {isEditMode && (
+                  <Tag color="green" style={{ marginLeft: '8px', fontSize: '12px' }}>
+                    Edit Mode
+                  </Tag>
+                )}
+              </Title>
+              <Text type="secondary">
+                {isEditMode 
+                  ? 'Click on matrix cells to edit index values. Changes are saved automatically.'
+                  : 'Set index values for each segment across different KVI types. Each row represents a segment, and each column represents a KVI type. Values represent percentage relative to competitor prices.'
+                }
+              </Text>
+            </div>
+            <div style={{ flexShrink: 0 }}>
+              {!isEditMode ? (
+                <Button
+                  type="primary"
+                  icon={<EditOutlined />}
+                  onClick={handleEditMode}
+                  style={{ 
+                    backgroundColor: '#7C3AED',
+                    borderColor: '#7C3AED'
+                  }}
+                >
+                  Edit
+                </Button>
+              ) : (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Button
+                    onClick={handleCancelEdit}
+                    style={{ 
+                      backgroundColor: '#7C3AED',
+                      borderColor: '#7C3AED',
+                      color: 'white'
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="primary"
+                    onClick={handleSaveChanges}
+                    style={{ 
+                      backgroundColor: '#7C3AED',
+                      borderColor: '#7C3AED'
+                    }}
+                  >
+                    Save
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Competitor Tabs */}

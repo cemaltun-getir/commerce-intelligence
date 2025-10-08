@@ -290,6 +290,10 @@ const WarehousePage: React.FC = () => {
               value={filters.city || undefined}
               onChange={handleCityChange}
               allowClear
+              showSearch
+              filterOption={(input, option) =>
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+              }
             >
               {uniqueCities.map(city => (
                 <Option key={city} value={city}>{city}</Option>
@@ -303,6 +307,10 @@ const WarehousePage: React.FC = () => {
               value={filters.region || undefined}
               onChange={handleRegionChange}
               allowClear
+              showSearch
+              filterOption={(input, option) =>
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+              }
             >
               {uniqueRegions.map(region => (
                 <Option key={region} value={region}>{region}</Option>
@@ -316,6 +324,10 @@ const WarehousePage: React.FC = () => {
               value={filters.domain || undefined}
               onChange={handleDomainChange}
               allowClear
+              showSearch
+              filterOption={(input, option) =>
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+              }
             >
               {[...new Set(warehouses.flatMap(w => w.domains || []))].map(domain => (
                 <Option key={domain} value={domain}>{domain}</Option>
@@ -329,6 +341,10 @@ const WarehousePage: React.FC = () => {
               value={filters.demography || undefined}
               onChange={handleDemographyChange}
               allowClear
+              showSearch
+              filterOption={(input, option) =>
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+              }
             >
               {[...new Set(warehouses.map(w => w.demography))].map(demography => (
                 <Option key={demography} value={demography}>{demography}</Option>
@@ -342,6 +358,10 @@ const WarehousePage: React.FC = () => {
               value={filters.size || undefined}
               onChange={handleSizeChange}
               allowClear
+              showSearch
+              filterOption={(input, option) =>
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+              }
             >
               {[...new Set(warehouses.map(w => w.size))].map(size => (
                 <Option key={size} value={size}>{size}</Option>

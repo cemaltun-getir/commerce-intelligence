@@ -308,14 +308,24 @@ const BoundaryRulesPage: React.FC = () => {
           <Input placeholder="Search rules" />
         </Col>
         <Col span={4}>
-          <Select placeholder="Sales Channel" style={{ width: '100%' }}>
+          <Select placeholder="Sales Channel" style={{ width: '100%' }}
+            showSearch
+            filterOption={(input, option) =>
+              String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+            }
+          >
             <Option value="all">All Channels</Option>
             <Option value="getir">Getir</Option>
             <Option value="getirbuyuk">GetirBüyük</Option>
           </Select>
         </Col>
         <Col span={4}>
-          <Select placeholder="Category" style={{ width: '100%' }}>
+          <Select placeholder="Category" style={{ width: '100%' }}
+            showSearch
+            filterOption={(input, option) =>
+              String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+            }
+          >
             <Option value="all">All Categories</Option>
             <Option value="basic-foods">Basic Foods</Option>
             <Option value="beverages">Beverages</Option>
@@ -323,7 +333,12 @@ const BoundaryRulesPage: React.FC = () => {
           </Select>
         </Col>
         <Col span={4}>
-          <Select placeholder="Status" style={{ width: '100%' }}>
+          <Select placeholder="Status" style={{ width: '100%' }}
+            showSearch
+            filterOption={(input, option) =>
+              String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+            }
+          >
             <Option value="all">All Status</Option>
             <Option value="active">Active</Option>
             <Option value="inactive">Inactive</Option>

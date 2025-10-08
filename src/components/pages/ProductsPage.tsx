@@ -1464,6 +1464,10 @@ const ProductsPage: React.FC = () => {
               value={selectedLevel1}
               onChange={handleLevel1Change}
               size="large"
+              showSearch
+              filterOption={(input, option) =>
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+              }
             >
               <Option value="all">Level 1</Option>
               {level1Categories.map(category => (
@@ -1481,6 +1485,10 @@ const ProductsPage: React.FC = () => {
               onChange={handleLevel2Change}
               disabled={selectedLevel1 === 'all'}
               size="large"
+              showSearch
+              filterOption={(input, option) =>
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+              }
             >
               <Option value="all">Level 2</Option>
               {level2Categories.map(category => (
@@ -1498,6 +1506,10 @@ const ProductsPage: React.FC = () => {
               onChange={handleLevel3Change}
               disabled={selectedLevel2 === 'all'}
               size="large"
+              showSearch
+              filterOption={(input, option) =>
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+              }
             >
               <Option value="all">Level 3</Option>
               {level3Categories.map(category => (
@@ -1515,6 +1527,10 @@ const ProductsPage: React.FC = () => {
               onChange={handleLevel4Change}
               disabled={selectedLevel3 === 'all'}
               size="large"
+              showSearch
+              filterOption={(input, option) =>
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+              }
             >
               <Option value="all">Level 4</Option>
               {level4Categories.map(category => (
@@ -1531,6 +1547,10 @@ const ProductsPage: React.FC = () => {
               value={selectedBrandFilter}
               onChange={setSelectedBrandFilter}
               size="large"
+              showSearch
+              filterOption={(input, option) =>
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+              }
             >
               <Option value="all">Brand</Option>
               {uniqueBrands.map(brand => (
@@ -1547,6 +1567,10 @@ const ProductsPage: React.FC = () => {
               value={selectedCompetitorFilter}
               onChange={setSelectedCompetitorFilter}
               size="large"
+              showSearch
+              filterOption={(input, option) =>
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+              }
             >
               <Option value="all">Competitor</Option>
               {competitors.map(competitor => (
@@ -1563,6 +1587,10 @@ const ProductsPage: React.FC = () => {
               value={selectedDiscountedFilter}
               onChange={setSelectedDiscountedFilter}
               size="large"
+              showSearch
+              filterOption={(input, option) =>
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+              }
             >
               <Option value="all">Products</Option>
               <Option value="discounted">Discounted Only</Option>

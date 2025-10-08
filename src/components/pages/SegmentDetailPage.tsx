@@ -371,6 +371,10 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
                   value={domainFilter || undefined}
                   onChange={setDomainFilter}
                   allowClear
+                  showSearch
+                  filterOption={(input, option) =>
+                    String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+                  }
                 >
                   <Option value="all">All Domains</Option>
                   {filterOptions.domains.map(domain => (
@@ -385,6 +389,10 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
                   value={demographyFilter || undefined}
                   onChange={setDemographyFilter}
                   allowClear
+                  showSearch
+                  filterOption={(input, option) =>
+                    String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+                  }
                 >
                   <Option value="all">All Demographies</Option>
                   {filterOptions.demographies.map(demography => (
@@ -399,6 +407,10 @@ const SegmentDetailPage: React.FC<SegmentDetailPageProps> = ({ segmentId }) => {
                   value={sizeFilter || undefined}
                   onChange={setSizeFilter}
                   allowClear
+                  showSearch
+                  filterOption={(input, option) =>
+                    String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+                  }
                 >
                   <Option value="all">All Sizes</Option>
                   {filterOptions.sizes.map(size => (
