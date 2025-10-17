@@ -33,8 +33,8 @@ export async function POST(request: NextRequest) {
     }
     const products = await productsResponse.json();
     
-    // Get configuration from database
-    const configuration = await WasteConfiguration.findById('68e8e5aa3190fb9db79aa9f4').lean() as WasteConfigurationType | null;
+    // Get configuration from database (get the latest one)
+    const configuration = await WasteConfiguration.findOne().sort({ lastUpdated: -1 }).lean() as WasteConfigurationType | null;
     
     if (!configuration) {
       throw new Error('No waste configuration found in database');
