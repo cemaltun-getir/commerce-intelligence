@@ -20,6 +20,15 @@ export interface Product {
   selling_price?: number;
   selling_vat?: number;
   selling_price_without_vat?: number;
+  // Category level fields for hierarchical filtering
+  category_level1_id?: string;
+  category_level1_name?: string;
+  category_level2_id?: string;
+  category_level2_name?: string;
+  category_level3_id?: string;
+  category_level3_name?: string;
+  category_level4_id?: string;
+  category_level4_name?: string;
 }
 
 export interface Competitor {

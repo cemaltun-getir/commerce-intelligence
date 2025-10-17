@@ -42,6 +42,46 @@ export async function POST(request: NextRequest) {
     }
     const products = await productsResponse.json();
     
+    // Get categories to build category hierarchy map
+    const categoriesResponse = await fetch(`${baseUrl}/api/external-categories`);
+    if (!categoriesResponse.ok) {
+      throw new Error(`Failed to fetch categories: ${categoriesResponse.status}`);
+    }
+    const categories = await categoriesResponse.json();
+    
+    // Build a map of category ID to its full hierarchy
+    const categoryHierarchyMap = new Map<string, { level1Id?: string; level2Id?: string; level3Id?: string; level4Id?: string }>();
+    
+    const buildHierarchyMap = (cats: any[], level1Id?: string, level2Id?: string, level3Id?: string) => {
+      for (const cat of cats) {
+        if (level1Id === undefined) {
+          // This is level 1
+          categoryHierarchyMap.set(cat.id, { level1Id: cat.id });
+          if (cat.children) {
+            buildHierarchyMap(cat.children, cat.id);
+          }
+        } else if (level2Id === undefined) {
+          // This is level 2
+          categoryHierarchyMap.set(cat.id, { level1Id, level2Id: cat.id });
+          if (cat.children) {
+            buildHierarchyMap(cat.children, level1Id, cat.id);
+          }
+        } else if (level3Id === undefined) {
+          // This is level 3
+          categoryHierarchyMap.set(cat.id, { level1Id, level2Id, level3Id: cat.id });
+          if (cat.children) {
+            buildHierarchyMap(cat.children, level1Id, level2Id, cat.id);
+          }
+        } else {
+          // This is level 4
+          categoryHierarchyMap.set(cat.id, { level1Id, level2Id, level3Id, level4Id: cat.id });
+        }
+      }
+    };
+    
+    buildHierarchyMap(categories);
+    console.log('Built category hierarchy map with', categoryHierarchyMap.size, 'categories');
+    
     // Get configuration from database (get the latest one)
     const configuration = await WasteConfiguration.findOne().sort({ lastUpdated: -1 }).lean() as WasteConfigurationType | null;
     
@@ -61,6 +101,11 @@ export async function POST(request: NextRequest) {
         continue; // Skip products without pricing data
       }
       
+      // Log the full product structure for the first item to debug category fields
+      if (wastePrices.length === 0) {
+        console.log('Sample product structure:', JSON.stringify(product, null, 2));
+      }
+      
       // Calculate suggested waste price
       const { wastePrice, discountPercent, marginPercent } = calculateFinalSuggestedWastePrice(
         product.selling_price,
@@ -74,13 +119,28 @@ export async function POST(request: NextRequest) {
         product.selling_price
       );
       
+      // Determine the category ID to use for hierarchy lookup
+      // Try category_level4_id first, then fall back to category_id
+      const categoryIdForLookup = product.category_level4_id || product.category_id;
+      const categoryHierarchy = categoryHierarchyMap.get(categoryIdForLookup) || {};
+      
+      // If product has explicit level IDs, use those; otherwise use the hierarchy map
+      const level1Id = product.category_level1_id || categoryHierarchy.level1Id;
+      const level2Id = product.category_level2_id || categoryHierarchy.level2Id;
+      const level3Id = product.category_level3_id || categoryHierarchy.level3Id;
+      const level4Id = product.category_level4_id || categoryHierarchy.level4Id || product.category_id;
+      
       // No need to check for duplicates since we cleared all pending waste prices
       
       console.log('Creating waste price for:', {
         warehouseId: expiryItem.warehouse_id || expiryItem.location_id,
         warehouseName: expiryItem.warehouse_name || expiryItem.location_name,
         skuId: expiryItem.sku_id,
-        productName: expiryItem.sku_name
+        productName: expiryItem.sku_name,
+        categoryLevel1Id: level1Id,
+        categoryLevel2Id: level2Id,
+        categoryLevel3Id: level3Id,
+        categoryLevel4Id: level4Id,
       });
       
       const newWastePrice = new WastePrice({
@@ -97,13 +157,13 @@ export async function POST(request: NextRequest) {
         status: 'pending',
         createdAt: new Date(),
         productName: expiryItem.sku_name,
-        categoryName: product.category_level4_name || 'Unknown',
+        categoryName: product.category_level4_name || product.category_name || 'Unknown',
         warehouseName: expiryItem.warehouse_name || expiryItem.location_name,
-        // Add category level IDs for filtering
-        categoryLevel1Id: product.category_level1_id,
-        categoryLevel2Id: product.category_level2_id,
-        categoryLevel3Id: product.category_level3_id,
-        categoryLevel4Id: product.category_level4_id,
+        // Add category level IDs for filtering - use resolved hierarchy
+        categoryLevel1Id: level1Id,
+        categoryLevel2Id: level2Id,
+        categoryLevel3Id: level3Id,
+        categoryLevel4Id: level4Id,
       });
       
       await newWastePrice.save();
