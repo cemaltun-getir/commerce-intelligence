@@ -128,6 +128,13 @@ const WastePricePage: React.FC = () => {
     });
   }, [searchText, selectedWarehouses, minDays, maxDays, selectedStatus, setWastePriceFilter]);
 
+  // Set form values when configuration modal opens
+  useEffect(() => {
+    if (isConfigModalVisible && wasteConfiguration) {
+      configForm.setFieldsValue(wasteConfiguration);
+    }
+  }, [isConfigModalVisible, wasteConfiguration, configForm]);
+
   // Filter waste prices
   const filteredWastePrices = useMemo(() => {
     let filtered = wastePrices;

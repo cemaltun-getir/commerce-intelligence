@@ -1,8 +1,6 @@
 import { WarehouseProductExpiry, WastePrice, WasteConfiguration, WastePriceFilter } from '@/types';
 
-const API_BASE = process.env.NODE_ENV === 'production' 
-  ? process.env.NEXT_PUBLIC_API_BASE_URL || 'https://your-domain.com/api'
-  : 'http://localhost:3000/api';
+const API_BASE = '/api';
 
 // External API proxy functions
 export const wastePriceApi = {
