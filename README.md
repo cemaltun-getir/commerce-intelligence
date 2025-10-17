@@ -106,7 +106,39 @@ npm run dev          # Start development server
 npm run build        # Build for production
 npm run start        # Start production server
 npm run lint         # Run ESLint
-npm run type-check   # Run TypeScript checks
+npm run init:db      # Initialize database with default configurations
+```
+
+### Database Setup
+
+This application requires MongoDB. Make sure you have a MongoDB instance running and set the `MONGODB_URI` environment variable.
+
+**Environment Variable**:
+```env
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database-name
+```
+
+**Initialize Database**:
+After deploying to a new environment (like Heroku), initialize the database with default configurations:
+
+```bash
+# Set the APP_URL to your deployed application URL
+export APP_URL=https://your-app.herokuapp.com
+npm run init:db
+```
+
+Or you can manually trigger initialization by making a POST request:
+```bash
+curl -X POST https://your-app.herokuapp.com/api/init
+```
+
+This will create:
+- Default waste price configuration with aggression tiers
+- Required database indexes and constraints
+
+**Check Initialization Status**:
+```bash
+curl https://your-app.herokuapp.com/api/init
 ```
 
 ## 🎮 Usage Guide
@@ -151,8 +183,19 @@ The application features a sidebar navigation with the following sections:
 Create a `.env.local` file for environment-specific settings:
 
 ```env
+# Required
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database-name
+
+# Optional
 NEXT_PUBLIC_API_URL=your_api_endpoint
 NEXT_PUBLIC_APP_NAME=Getir Commerce Intelligence
+APP_URL=https://your-app.herokuapp.com  # For database initialization script
+```
+
+**Heroku Configuration**:
+```bash
+heroku config:set MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/database-name"
+heroku config:set APP_URL="https://your-app.herokuapp.com"
 ```
 
 ### Mock Data

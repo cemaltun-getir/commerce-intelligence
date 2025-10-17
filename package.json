@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "migrate:segments": "node scripts/migrate-segments.js",
+    "init:db": "node scripts/init-db.js",
     "heroku-postbuild": "npm ci && npm run build"
   },
   "dependencies": {

@@ -124,8 +124,7 @@ export const getUrgencyColor = (daysUntilExpiry: number): string => {
 };
 
 // Default configuration
-export const getDefaultWasteConfiguration = (): WasteConfiguration => ({
-  _id: undefined,
+export const getDefaultWasteConfiguration = (): Omit<WasteConfiguration, '_id'> => ({
   aggressionTiers: [
     {
       name: 'Critical (0-3 days)',
@@ -159,5 +158,5 @@ export const getDefaultWasteConfiguration = (): WasteConfiguration => ({
   minMarginPercent: 5,
   maxDiscountPercent: 70,
   lastUpdated: new Date().toISOString(),
-  updatedBy: undefined
+  updatedBy: 'system'
 });
