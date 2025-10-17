@@ -13,18 +13,27 @@ export async function POST(request: NextRequest) {
     
     // Get the base URL for internal API calls
     // Use the request origin if available, otherwise fall back to APP_URL or localhost
-    const origin = request.headers.get('origin') || request.headers.get('host');
+    const host = request.headers.get('host');
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-    const baseUrl = origin 
-      ? (origin.startsWith('http') ? origin : `${protocol}://${origin}`)
+    const baseUrl = host 
+      ? `${protocol}://${host}`
       : (process.env.APP_URL || 'http://localhost:3000');
     
+    console.log('Base URL for internal API calls:', baseUrl);
+    
     // Get warehouse product expiry data via internal proxy
-    const externalResponse = await fetch(`${baseUrl}/api/external-warehouse-product-expiry`);
+    const warehouseExpiryUrl = `${baseUrl}/api/external/warehouse-product-expiry`;
+    console.log('Fetching from:', warehouseExpiryUrl);
+    const externalResponse = await fetch(warehouseExpiryUrl);
+    console.log('Warehouse expiry response status:', externalResponse.status);
     if (!externalResponse.ok) {
+      const errorText = await externalResponse.text();
+      console.error('Failed to fetch warehouse expiry data:', errorText);
       throw new Error(`Failed to fetch warehouse product expiry data: ${externalResponse.status}`);
     }
     const expiryData = await externalResponse.json();
+    console.log('Fetched expiry data items:', expiryData.length);
+    console.log('Sample expiry item:', JSON.stringify(expiryData[0], null, 2));
     
     // Get all products for pricing data via internal proxy
     const productsResponse = await fetch(`${baseUrl}/api/external-products`);
@@ -67,8 +76,15 @@ export async function POST(request: NextRequest) {
       
       // No need to check for duplicates since we cleared all pending waste prices
       
+      console.log('Creating waste price for:', {
+        warehouseId: expiryItem.warehouse_id || expiryItem.location_id,
+        warehouseName: expiryItem.warehouse_name || expiryItem.location_name,
+        skuId: expiryItem.sku_id,
+        productName: expiryItem.sku_name
+      });
+      
       const newWastePrice = new WastePrice({
-        warehouseId: expiryItem.location_id,
+        warehouseId: expiryItem.warehouse_id || expiryItem.location_id,
         skuId: expiryItem.sku_id,
         suggestedWastePrice: wastePrice,
         originalSellingPrice: product.selling_price,
@@ -82,7 +98,7 @@ export async function POST(request: NextRequest) {
         createdAt: new Date(),
         productName: expiryItem.sku_name,
         categoryName: product.category_level4_name || 'Unknown',
-        warehouseName: expiryItem.location_name,
+        warehouseName: expiryItem.warehouse_name || expiryItem.location_name,
         // Add category level IDs for filtering
         categoryLevel1Id: product.category_level1_id,
         categoryLevel2Id: product.category_level2_id,

@@ -45,12 +45,31 @@ export async function POST(
     
     // Push to external pricing system
     try {
-      await wastePriceApi.applyWastePrice({
-        skuId: wastePrice.skuId,
-        warehouseId: wastePrice.warehouseId,
-        wastePrice: confirmedPrice,
-        userId,
+      // Build absolute URL for internal API call
+      const host = request.headers.get('host');
+      const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+      const baseUrl = host ? `${protocol}://${host}` : 'http://localhost:3000';
+      
+      const response = await fetch(`${baseUrl}/api/external/waste-price`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sku_id: wastePrice.skuId,
+          warehouse_id: wastePrice.warehouseId,
+          waste_price: confirmedPrice,
+          user_id: userId,
+          applied_at: new Date().toISOString(),
+        }),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`External API responded with status: ${response.status} - ${errorData.error || 'Unknown error'}`);
+      }
+      
+      console.log('Waste price applied successfully to external system');
       
       // Update status to applied
       wastePrice.status = 'applied';

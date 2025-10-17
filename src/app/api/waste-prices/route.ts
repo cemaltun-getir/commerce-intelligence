@@ -48,6 +48,9 @@ export async function GET(request: NextRequest) {
     
     if (status && status !== 'all') {
       query.status = status;
+    } else {
+      // Exclude 'applied' prices by default (only show pending, confirmed, rejected)
+      query.status = { $ne: 'applied' };
     }
     
     const wastePrices = await WastePrice.find(query)

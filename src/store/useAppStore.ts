@@ -461,12 +461,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   generateWastePrices: async () => {
     try {
       get().startLoading('generateWastePrices');
-      const wastePrices = await wastePriceApi.generateWastePrices();
-      set({ wastePrices });
+      await wastePriceApi.generateWastePrices();
+      // Fetch all waste prices (including existing confirmed/applied ones)
+      await get().fetchWastePrices();
       get().stopLoading('generateWastePrices');
     } catch (error) {
       console.error('Failed to generate waste prices:', error);
       get().stopLoading('generateWastePrices');
+      throw error;
     }
   },
 

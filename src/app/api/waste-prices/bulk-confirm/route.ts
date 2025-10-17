@@ -39,6 +39,11 @@ export async function POST(request: NextRequest) {
     
     const confirmedPrices = [];
     
+    // Build absolute URL for internal API calls
+    const host = request.headers.get('host');
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const baseUrl = host ? `${protocol}://${host}` : 'http://localhost:3000';
+    
     for (const wastePrice of wastePrices) {
       // Use suggested price as confirmed price
       wastePrice.confirmedWastePrice = wastePrice.suggestedWastePrice;
@@ -50,12 +55,26 @@ export async function POST(request: NextRequest) {
       
       // Push to external pricing system
       try {
-        await wastePriceApi.applyWastePrice({
-          skuId: wastePrice.skuId,
-          warehouseId: wastePrice.warehouseId,
-          wastePrice: wastePrice.suggestedWastePrice,
-          userId,
+        const response = await fetch(`${baseUrl}/api/external/waste-price`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sku_id: wastePrice.skuId,
+            warehouse_id: wastePrice.warehouseId,
+            waste_price: wastePrice.suggestedWastePrice,
+            user_id: userId,
+            applied_at: new Date().toISOString(),
+          }),
         });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`External API responded with status: ${response.status} - ${errorData.error || 'Unknown error'}`);
+        }
+        
+        console.log(`Waste price applied successfully for ${wastePrice._id}`);
         
         // Update status to applied
         wastePrice.status = 'applied';
