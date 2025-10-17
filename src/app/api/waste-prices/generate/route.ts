@@ -4,6 +4,7 @@ import { WastePrice } from '@/models/WastePrice';
 import { WasteConfiguration } from '@/models/WasteConfiguration';
 import { externalApi } from '@/utils/externalApi';
 import { calculateFinalSuggestedWastePrice, calculateProjectedWasteValue, getDefaultWasteConfiguration } from '@/utils/wastePriceCalculations';
+import { Product, WasteConfiguration as WasteConfigurationType } from '@/types';
 
 // POST /api/waste-prices/generate - Generate waste prices for all expiring products
 export async function POST(request: NextRequest) {
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
     const products = await productsResponse.json();
     
     // Get configuration from database
-    const configuration = await WasteConfiguration.findById('68e8e5aa3190fb9db79aa9f4').lean();
+    const configuration = await WasteConfiguration.findById('68e8e5aa3190fb9db79aa9f4').lean() as WasteConfigurationType | null;
     
     if (!configuration) {
       throw new Error('No waste configuration found in database');
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
     const wastePrices = [];
     
     for (const expiryItem of expiryData) {
-      const product = products.find(p => p.id === expiryItem.sku_id);
+      const product = products.find((p: Product) => p.id === expiryItem.sku_id);
       
       if (!product || !product.selling_price || !product.buying_price) {
         continue; // Skip products without pricing data
