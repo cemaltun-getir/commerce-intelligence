@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
     
     const externalUrl = `${EXTERNAL_API_BASE}/warehouse-inventory${params.toString() ? `?${params.toString()}` : ''}`;
     
+    console.log(`Fetching warehouse product expiry data from: ${externalUrl}`);
+    
     const response = await fetch(externalUrl, {
       method: 'GET',
       headers: {
@@ -24,8 +26,11 @@ export async function GET(request: NextRequest) {
       },
     });
     
+    console.log(`Response status: ${response.status}, Content-Type: ${response.headers.get('content-type')}`);
+    
     if (!response.ok) {
-      console.error(`External API error: ${response.status} ${response.statusText}`);
+      const responseText = await response.text();
+      console.error(`External API error: ${response.status} ${response.statusText}`, responseText.substring(0, 200));
       return NextResponse.json(
         { error: 'Failed to fetch warehouse product expiry data' },
         { status: response.status }
