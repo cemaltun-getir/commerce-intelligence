@@ -11,15 +11,23 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB();
     
-    // Get warehouse product expiry data directly from external API
-    const externalResponse = await fetch('http://localhost:3001/api/warehouse-inventory');
+    // Get the base URL for internal API calls
+    // Use the request origin if available, otherwise fall back to APP_URL or localhost
+    const origin = request.headers.get('origin') || request.headers.get('host');
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const baseUrl = origin 
+      ? (origin.startsWith('http') ? origin : `${protocol}://${origin}`)
+      : (process.env.APP_URL || 'http://localhost:3000');
+    
+    // Get warehouse product expiry data via internal proxy
+    const externalResponse = await fetch(`${baseUrl}/api/external-warehouse-product-expiry`);
     if (!externalResponse.ok) {
       throw new Error(`Failed to fetch warehouse product expiry data: ${externalResponse.status}`);
     }
     const expiryData = await externalResponse.json();
     
-    // Get all products for pricing data directly from external API
-    const productsResponse = await fetch('http://localhost:3001/api/skus');
+    // Get all products for pricing data via internal proxy
+    const productsResponse = await fetch(`${baseUrl}/api/external-products`);
     if (!productsResponse.ok) {
       throw new Error(`Failed to fetch products: ${productsResponse.status}`);
     }
