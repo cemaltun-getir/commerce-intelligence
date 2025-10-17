@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // GET /api/external-products - Proxy to external API for products
 export async function GET(request: NextRequest) {
   try {
-    const externalApiBase = process.env.EXTERNAL_API_BASE_URL || 'http://localhost:3001/api/external';
+    const externalApiBase = process.env.EXTERNAL_API_BASE_URL || 'http://localhost:3001/api';
     
     // Get query parameters from the request
     const { searchParams } = new URL(request.url);

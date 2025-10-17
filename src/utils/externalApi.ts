@@ -1,6 +1,6 @@
 import { Product, Competitor, CompetitorPrice, Category, SubCategory, Warehouse } from '@/types';
 
-const EXTERNAL_API_BASE = process.env.EXTERNAL_API_BASE_URL || 'http://localhost:3001/api/external';
+const EXTERNAL_API_BASE = process.env.EXTERNAL_API_BASE_URL || 'http://localhost:3001/api';
 
 // External warehouse format from API
 interface ExternalWarehouse {

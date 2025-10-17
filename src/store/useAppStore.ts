@@ -12,12 +12,17 @@ import {
   Warehouse,
   PriceLocation,
   Category,
-  SubCategory
+  SubCategory,
+  WarehouseProductExpiry,
+  WastePrice,
+  WasteConfiguration,
+  WastePriceFilter
 } from '@/types';
 import { segmentApi } from '@/utils/segmentApi';
 import { warehouseApi } from '@/utils/warehouseApi';
 import { indexValueApi } from '@/utils/indexValueApi';
 import { externalApi } from '@/utils/externalApi';
+import { wastePriceApi } from '@/utils/wastePriceApi';
 
 interface AppState {
   // Product data
@@ -46,6 +51,12 @@ interface AppState {
   // Boundary rules
   boundaryRules: BoundaryRule[];
   
+  // Waste price data
+  warehouseProductExpiry: WarehouseProductExpiry[];
+  wastePrices: WastePrice[];
+  wasteConfiguration: WasteConfiguration | null;
+  wastePriceFilter: WastePriceFilter;
+  
   // UI state
   activeCompetitor: string;
   activeSalesChannel: 'getir' | 'getirbuyuk';
@@ -59,6 +70,7 @@ interface AppState {
   setActiveSalesChannel: (channel: 'getir' | 'getirbuyuk') => void;
   setProductFilter: (filter: Partial<ProductFilter>) => void;
   setSegmentFilter: (filter: Partial<SegmentFilter>) => void;
+  setWastePriceFilter: (filter: Partial<WastePriceFilter>) => void;
   setLoading: (loading: boolean) => void;
   startLoading: (operation: string) => void;
   stopLoading: (operation: string) => void;
@@ -103,6 +115,16 @@ interface AppState {
   fetchCompetitorPrices: () => Promise<void>;
   fetchCategories: () => Promise<void>;
   fetchSubCategories: () => Promise<void>;
+  
+  // Waste price actions
+  fetchWarehouseProductExpiry: () => Promise<void>;
+  fetchWastePrices: (filter?: WastePriceFilter) => Promise<void>;
+  fetchWasteConfiguration: () => Promise<void>;
+  generateWastePrices: () => Promise<void>;
+  confirmWastePrice: (id: string, confirmedPrice: number, userId: string, notes?: string) => Promise<void>;
+  rejectWastePrice: (id: string, userId: string, notes?: string) => Promise<void>;
+  bulkConfirmWastePrices: (ids: string[], userId: string) => Promise<void>;
+  updateWasteConfiguration: (configuration: WasteConfiguration, userId: string) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -120,6 +142,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   indexValues: [],
   boundaryRules: [],
   
+  // Waste price state
+  warehouseProductExpiry: [],
+  wastePrices: [],
+  wasteConfiguration: null,
+  wastePriceFilter: {},
+  
   // UI state
   activeCompetitor: 'migros',
   activeSalesChannel: 'getir',
@@ -133,6 +161,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setActiveSalesChannel: (channel) => set({ activeSalesChannel: channel }),
   setProductFilter: (filter) => set({ productFilter: { ...get().productFilter, ...filter } }),
   setSegmentFilter: (filter) => set({ segmentFilter: { ...get().segmentFilter, ...filter } }),
+  setWastePriceFilter: (filter) => set({ wastePriceFilter: { ...get().wastePriceFilter, ...filter } }),
   setLoading: (loading) => set({ loading }),
   
   startLoading: (operation) => set((state) => {
@@ -389,6 +418,129 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (error) {
       console.error('Failed to fetch sub-categories:', error);
       get().stopLoading('subCategories');
+    }
+  },
+
+  // Waste price actions
+  fetchWarehouseProductExpiry: async () => {
+    try {
+      get().startLoading('warehouseProductExpiry');
+      const warehouseProductExpiry = await wastePriceApi.getWarehouseProductExpiry();
+      set({ warehouseProductExpiry });
+      get().stopLoading('warehouseProductExpiry');
+    } catch (error) {
+      console.error('Failed to fetch warehouse product expiry:', error);
+      get().stopLoading('warehouseProductExpiry');
+    }
+  },
+
+  fetchWastePrices: async (filter?: WastePriceFilter) => {
+    try {
+      get().startLoading('wastePrices');
+      const wastePrices = await wastePriceApi.getWastePrices(filter);
+      set({ wastePrices });
+      get().stopLoading('wastePrices');
+    } catch (error) {
+      console.error('Failed to fetch waste prices:', error);
+      get().stopLoading('wastePrices');
+    }
+  },
+
+  fetchWasteConfiguration: async () => {
+    try {
+      get().startLoading('wasteConfiguration');
+      const wasteConfiguration = await wastePriceApi.getWasteConfiguration();
+      set({ wasteConfiguration });
+      get().stopLoading('wasteConfiguration');
+    } catch (error) {
+      console.error('Failed to fetch waste configuration:', error);
+      get().stopLoading('wasteConfiguration');
+    }
+  },
+
+  generateWastePrices: async () => {
+    try {
+      get().startLoading('generateWastePrices');
+      const wastePrices = await wastePriceApi.generateWastePrices();
+      set({ wastePrices });
+      get().stopLoading('generateWastePrices');
+    } catch (error) {
+      console.error('Failed to generate waste prices:', error);
+      get().stopLoading('generateWastePrices');
+    }
+  },
+
+  confirmWastePrice: async (id: string, confirmedPrice: number, userId: string, notes?: string) => {
+    try {
+      get().startLoading('confirmWastePrice');
+      const updatedWastePrice = await wastePriceApi.confirmWastePrice(id, confirmedPrice, userId, notes);
+      
+      // Update the waste price in the store
+      set((state) => ({
+        wastePrices: state.wastePrices.map(wp => 
+          wp._id === id ? updatedWastePrice : wp
+        )
+      }));
+      
+      get().stopLoading('confirmWastePrice');
+    } catch (error) {
+      console.error('Failed to confirm waste price:', error);
+      get().stopLoading('confirmWastePrice');
+      throw error;
+    }
+  },
+
+  rejectWastePrice: async (id: string, userId: string, notes?: string) => {
+    try {
+      get().startLoading('rejectWastePrice');
+      const updatedWastePrice = await wastePriceApi.rejectWastePrice(id, userId, notes);
+      
+      // Update the waste price in the store
+      set((state) => ({
+        wastePrices: state.wastePrices.map(wp => 
+          wp._id === id ? updatedWastePrice : wp
+        )
+      }));
+      
+      get().stopLoading('rejectWastePrice');
+    } catch (error) {
+      console.error('Failed to reject waste price:', error);
+      get().stopLoading('rejectWastePrice');
+      throw error;
+    }
+  },
+
+  bulkConfirmWastePrices: async (ids: string[], userId: string) => {
+    try {
+      get().startLoading('bulkConfirmWastePrices');
+      const confirmedWastePrices = await wastePriceApi.bulkConfirmWastePrices(ids, userId);
+      
+      // Update the waste prices in the store
+      set((state) => ({
+        wastePrices: state.wastePrices.map(wp => {
+          const updated = confirmedWastePrices.find(cwp => cwp._id === wp._id);
+          return updated || wp;
+        })
+      }));
+      
+      get().stopLoading('bulkConfirmWastePrices');
+    } catch (error) {
+      console.error('Failed to bulk confirm waste prices:', error);
+      get().stopLoading('bulkConfirmWastePrices');
+      throw error;
+    }
+  },
+
+  updateWasteConfiguration: async (configuration: WasteConfiguration, userId: string) => {
+    try {
+      get().startLoading('updateWasteConfiguration');
+      const updatedConfiguration = await wastePriceApi.updateWasteConfiguration(configuration, userId);
+      set({ wasteConfiguration: updatedConfiguration });
+      get().stopLoading('updateWasteConfiguration');
+    } catch (error) {
+      console.error('Failed to update waste configuration:', error);
+      get().stopLoading('updateWasteConfiguration');
+      throw error;
     }
   },
 })); 

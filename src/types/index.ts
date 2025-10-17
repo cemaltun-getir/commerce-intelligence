@@ -179,4 +179,72 @@ export interface SubCategory {
   category_name: string;
   created_at: string;
   skus_count: number;
+}
+
+// Waste Price Management types
+export interface WarehouseProductExpiry {
+  warehouse_id: string;
+  warehouse_name: string;
+  sku_id: string;
+  sku_name: string;
+  category_id: string;
+  category_name: string;
+  quantity_on_hand: number;
+  days_until_expiry: number;
+  expiry_date: string;
+}
+
+export interface AggressionTier {
+  name: string;
+  minDays: number;
+  maxDays: number;
+  baseDiscount: number;
+  dailyIncrement: number;
+}
+
+export interface WasteConfiguration {
+  _id?: string;
+  aggressionTiers: AggressionTier[];
+  minMarginPercent: number;
+  maxDiscountPercent: number;
+  lastUpdated: string;
+  updatedBy?: string;
+}
+
+export interface WastePrice {
+  _id?: string;
+  warehouseId: string;
+  skuId: string;
+  suggestedWastePrice: number;
+  confirmedWastePrice?: number;
+  originalSellingPrice: number;
+  buyingPrice: number;
+  discountPercent: number;
+  marginPercent: number;
+  quantityOnHand: number;
+  daysUntilExpiry: number;
+  projectedWasteValue: number;
+  status: 'pending' | 'confirmed' | 'rejected' | 'applied';
+  createdAt: string;
+  confirmedAt?: string;
+  confirmedBy?: string;
+  notes?: string;
+  // Snapshots for historical reference
+  productName: string;
+  categoryName: string;
+  warehouseName: string;
+  // Category level fields for filtering
+  categoryLevel1Id?: string;
+  categoryLevel2Id?: string;
+  categoryLevel3Id?: string;
+  categoryLevel4Id?: string;
+}
+
+export interface WastePriceFilter {
+  search?: string;
+  warehouse?: string[];
+  category?: string;
+  minDays?: number;
+  maxDays?: number;
+  status?: 'pending' | 'confirmed' | 'rejected' | 'all';
 } 
