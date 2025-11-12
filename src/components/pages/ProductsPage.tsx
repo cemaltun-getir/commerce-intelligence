@@ -16,7 +16,8 @@ import {
   Tooltip,
   App,
   Checkbox,
-  Space
+  Space,
+  Switch
 } from 'antd';
 import { EditOutlined, ExportOutlined, DownOutlined, CopyOutlined, CheckOutlined, ClearOutlined, SettingOutlined, MenuOutlined } from '@ant-design/icons';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -115,7 +116,7 @@ const ALL_COLUMNS = [
   },
   {
     key: 'struckPrice',
-    title: 'Struck Price (Original)',
+    title: 'Competitor Discounted Price',
     width: 140,
     defaultVisible: false,
   },
@@ -127,7 +128,7 @@ const ALL_COLUMNS = [
   },
   {
     key: 'struckPriceCalculated',
-    title: 'Struck Price (Calculated)',
+    title: 'Discounted Price (Calculated)',
     width: 140,
     defaultVisible: false,
   },
@@ -153,7 +154,9 @@ const ProductsPage: React.FC = () => {
   const [selectedLevel4, setSelectedLevel4] = useState('all');
   const [selectedBrandFilter, setSelectedBrandFilter] = useState('all');
   const [selectedCompetitorFilter, setSelectedCompetitorFilter] = useState('all');
-  const [selectedDiscountedFilter, setSelectedDiscountedFilter] = useState('all');
+  const [selectedDiscountedFilter, setSelectedDiscountedFilter] = useState(false);
+  const [selectedSegmentFilter, setSelectedSegmentFilter] = useState('all');
+  const [selectedKviLabelFilter, setSelectedKviLabelFilter] = useState('all');
   
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
@@ -371,6 +374,12 @@ const ProductsPage: React.FC = () => {
   const calculateGetirPrice = (competitorPrice: number, indexValue: number): number => {
     // Index value represents percentage relative to competitor
     // 100 = same price, 105 = 5% higher, 95 = 5% lower
+    
+    // If index is exactly 100, return competitor price without rounding
+    if (indexValue === 100) {
+      return competitorPrice;
+    }
+    
     const basePrice = competitorPrice * (indexValue / 100);
     
     // Apply special rounding logic
@@ -529,22 +538,28 @@ const ProductsPage: React.FC = () => {
       filtered = filtered.filter(product => product.competitorId === selectedCompetitorFilter);
     }
     
-    // Apply discounted filter
-    if (selectedDiscountedFilter && selectedDiscountedFilter !== 'all') {
-      if (selectedDiscountedFilter === 'discounted') {
-        filtered = filtered.filter(product => product.isDiscounted === true);
-      } else if (selectedDiscountedFilter === 'not-discounted') {
-        filtered = filtered.filter(product => product.isDiscounted === false);
-      }
+    // Apply segment filter
+    if (selectedSegmentFilter && selectedSegmentFilter !== 'all') {
+      filtered = filtered.filter(product => product.segmentId === selectedSegmentFilter);
+    }
+    
+    // Apply KVI label filter
+    if (selectedKviLabelFilter && selectedKviLabelFilter !== 'all') {
+      filtered = filtered.filter(product => product.kviType === selectedKviLabelFilter);
+    }
+    
+    // Apply discounted filter (switch - when true, show only discounted)
+    if (selectedDiscountedFilter) {
+      filtered = filtered.filter(product => product.isDiscounted === true);
     }
     
     return filtered;
-  }, [productData, searchText, selectedBrandFilter, selectedCompetitorFilter, selectedDiscountedFilter]);
+  }, [productData, searchText, selectedBrandFilter, selectedCompetitorFilter, selectedSegmentFilter, selectedKviLabelFilter, selectedDiscountedFilter]);
 
   // Clear selection when filters change
   useEffect(() => {
     setSelectedRowKeys([]);
-  }, [searchText, selectedLevel1, selectedLevel2, selectedLevel3, selectedLevel4, selectedBrandFilter, selectedCompetitorFilter, selectedDiscountedFilter]);
+  }, [searchText, selectedLevel1, selectedLevel2, selectedLevel3, selectedLevel4, selectedBrandFilter, selectedCompetitorFilter, selectedSegmentFilter, selectedKviLabelFilter, selectedDiscountedFilter]);
 
   const handleExport = (format: 'csv' | 'xlsx') => {
     // If there are selected items, export only those
@@ -1228,7 +1243,7 @@ const ProductsPage: React.FC = () => {
       },
     },
     {
-      title: 'Struck Price (Original)',
+      title: 'Competitor Discounted Price',
       dataIndex: 'struckPrice',
       key: 'struckPrice',
       width: 140,
@@ -1237,7 +1252,7 @@ const ProductsPage: React.FC = () => {
         if (struckPrice === null || struckPrice === undefined) {
           return (
             <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
-              No struck price
+              No discounted price
             </div>
           );
         }
@@ -1306,7 +1321,7 @@ const ProductsPage: React.FC = () => {
       ),
     },
     {
-      title: 'Struck Price (Calculated)',
+      title: 'Discounted Price (Calculated)',
       dataIndex: 'struckPriceCalculated',
       key: 'struckPriceCalculated',
       width: 140,
@@ -1319,6 +1334,15 @@ const ProductsPage: React.FC = () => {
           return (
             <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
               No Getir price
+            </div>
+          );
+        }
+        
+        // Only calculate and show discounted price if there's an actual discount
+        if (discountRate === 0) {
+          return (
+            <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
+              No discount
             </div>
           );
         }
@@ -1447,8 +1471,8 @@ const ProductsPage: React.FC = () => {
         )}
 
         {/* Filters */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '16px' }}>
-          <Col xs={24} sm={12} md={8} lg={6}>
+        <Row gutter={[8, 8]} style={{ marginBottom: '16px' }}>
+          <Col xs={24} sm={12} md={6} lg={4}>
             <Input 
               placeholder="Search products..." 
               value={searchText}
@@ -1457,7 +1481,7 @@ const ProductsPage: React.FC = () => {
               size="large"
             />
           </Col>
-          <Col xs={12} sm={8} md={6} lg={3}>
+          <Col xs={12} sm={6} md={4} lg={2}>
             <Select 
               placeholder="Level 1" 
               style={{ width: '100%' }}
@@ -1477,7 +1501,7 @@ const ProductsPage: React.FC = () => {
               ))}
             </Select>
           </Col>
-          <Col xs={12} sm={8} md={6} lg={3}>
+          <Col xs={12} sm={6} md={4} lg={2}>
             <Select 
               placeholder="Level 2" 
               style={{ width: '100%' }}
@@ -1498,7 +1522,7 @@ const ProductsPage: React.FC = () => {
               ))}
             </Select>
           </Col>
-          <Col xs={12} sm={8} md={6} lg={3}>
+          <Col xs={12} sm={6} md={4} lg={2}>
             <Select 
               placeholder="Level 3" 
               style={{ width: '100%' }}
@@ -1519,7 +1543,7 @@ const ProductsPage: React.FC = () => {
               ))}
             </Select>
           </Col>
-          <Col xs={12} sm={8} md={6} lg={3}>
+          <Col xs={12} sm={6} md={4} lg={2}>
             <Select 
               placeholder="Level 4" 
               style={{ width: '100%' }}
@@ -1540,7 +1564,7 @@ const ProductsPage: React.FC = () => {
               ))}
             </Select>
           </Col>
-          <Col xs={12} sm={8} md={6} lg={3}>
+          <Col xs={12} sm={6} md={4} lg={2}>
             <Select 
               placeholder="Brand" 
               style={{ width: '100%' }}
@@ -1560,7 +1584,7 @@ const ProductsPage: React.FC = () => {
               ))}
             </Select>
           </Col>
-          <Col xs={12} sm={8} md={6} lg={3}>
+          <Col xs={12} sm={6} md={4} lg={2}>
             <Select 
               placeholder="Competitor" 
               style={{ width: '100%' }}
@@ -1580,22 +1604,53 @@ const ProductsPage: React.FC = () => {
               ))}
             </Select>
           </Col>
-          <Col xs={12} sm={8} md={6} lg={3}>
+          <Col xs={12} sm={6} md={4} lg={2}>
             <Select 
-              placeholder="Discounted" 
+              placeholder="Segment" 
               style={{ width: '100%' }}
-              value={selectedDiscountedFilter}
-              onChange={setSelectedDiscountedFilter}
+              value={selectedSegmentFilter}
+              onChange={setSelectedSegmentFilter}
               size="large"
               showSearch
               filterOption={(input, option) =>
                 String(option?.children || '').toLowerCase().includes(input.toLowerCase())
               }
             >
-              <Option value="all">Products</Option>
-              <Option value="discounted">Discounted Only</Option>
-              <Option value="not-discounted">Not Discounted</Option>
+              <Option value="all">Segment</Option>
+              {segments.map(segment => (
+                <Option key={segment.id} value={segment.id}>
+                  {segment.name}
+                </Option>
+              ))}
             </Select>
+          </Col>
+          <Col xs={12} sm={6} md={4} lg={2}>
+            <Select 
+              placeholder="KVI Label" 
+              style={{ width: '100%' }}
+              value={selectedKviLabelFilter}
+              onChange={setSelectedKviLabelFilter}
+              size="large"
+              showSearch
+              filterOption={(input, option) =>
+                String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+              }
+            >
+              <Option value="all">KVI Label</Option>
+              <Option value="SKVI">SKVI</Option>
+              <Option value="KVI">KVI</Option>
+              <Option value="Foreground">Foreground</Option>
+              <Option value="Background">Background</Option>
+            </Select>
+          </Col>
+          <Col xs={12} sm={6} md={4} lg={2}>
+            <div style={{ display: 'flex', alignItems: 'center', height: '40px' }}>
+              <Switch 
+                checked={selectedDiscountedFilter}
+                onChange={setSelectedDiscountedFilter}
+              />
+              <span style={{ marginLeft: '8px', whiteSpace: 'nowrap' }}>Discounted</span>
+            </div>
           </Col>
         </Row>
 

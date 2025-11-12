@@ -117,13 +117,13 @@ export const exportProductMatches = (
     'IX Price',
     'Competitor Price',
     'Discounted',
-    'Struck Price (API)',
+    'Competitor Discounted Price',
     'Discount %'
   ];
 
   // Always include discount columns if any discount rates exist
   const headers = hasDiscountRates 
-    ? [...baseHeaders, 'Discount Rate (%)', 'Struck Price']
+    ? [...baseHeaders, 'Discount Rate (%)', 'Discounted Price']
     : baseHeaders;
 
   // Map the data to include all fields including segment data
@@ -141,7 +141,8 @@ export const exportProductMatches = (
       'IX Price': item.getirUnitPrice || 0,
       'Competitor Price': item.competitorPrice || 0,
       'Discounted': item.isDiscounted ? 'Yes' : 'No',
-      'Struck Price (API)': item.struckPrice || '',
+      'Product Price (API)': item.price || '',
+      'Competitor Discounted Price': item.struckPrice || '',
       'Discount %': item.struckPrice && item.competitorPrice ? 
         ((Number(item.struckPrice) - Number(item.competitorPrice)) / Number(item.struckPrice) * 100).toFixed(1) + '%' : ''
     };
@@ -151,23 +152,28 @@ export const exportProductMatches = (
     const hasProductDiscountRate = discountRates && discountRates[productKey] !== undefined;
 
     if (hasDiscountRates && hasProductDiscountRate) {
-      // This product has a discount rate - include struck price
+      // This product has a discount rate - include discounted price
       const discountRate = discountRates[productKey];
       const getirPrice = item.getirUnitPrice as number || 0;
-      const rawStruckPrice = getirPrice * (1 - discountRate / 100);
-      const struckPrice = applyGetirRounding(rawStruckPrice);
+      
+      // Only calculate discounted price if discount rate is greater than 0
+      let struckPrice: string | number = '';
+      if (discountRate > 0) {
+        const rawStruckPrice = getirPrice * (1 - discountRate / 100);
+        struckPrice = applyGetirRounding(rawStruckPrice);
+      }
       
       return {
         ...baseData,
         'Discount Rate (%)': discountRate,
-        'Struck Price': struckPrice
+        'Discounted Price': struckPrice
       };
     } else if (hasDiscountRates) {
       // This product has no discount rate but other products do - include empty discount columns
       return {
         ...baseData,
         'Discount Rate (%)': '',
-        'Struck Price': ''
+        'Discounted Price': ''
       };
     }
 
