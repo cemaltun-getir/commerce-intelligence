@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { 
-  Typography, 
-  Tabs, 
-  Table, 
-  Button, 
-  Input, 
-  Select, 
+import {
+  Typography,
+  Tabs,
+  Table,
+  Button,
+  Input,
+  Select,
   Row,
   Col,
   Card,
@@ -137,7 +137,7 @@ const ALL_COLUMNS = [
 const ProductsPage: React.FC = () => {
   const { message } = useApp();
   const [activeChannel, setActiveChannel] = useState('getir');
-  
+
   // Drag and drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -145,7 +145,7 @@ const ProductsPage: React.FC = () => {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-  
+
   // Filter states
   const [searchText, setSearchText] = useState('');
   const [selectedLevel1, setSelectedLevel1] = useState('all');
@@ -157,7 +157,7 @@ const ProductsPage: React.FC = () => {
   const [selectedDiscountedFilter, setSelectedDiscountedFilter] = useState(false);
   const [selectedSegmentFilter, setSelectedSegmentFilter] = useState('all');
   const [selectedKviLabelFilter, setSelectedKviLabelFilter] = useState('all');
-  
+
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
     // Always start with default visible columns and always-visible columns to avoid hydration mismatch
@@ -169,14 +169,14 @@ const ProductsPage: React.FC = () => {
 
   // Track if preferences have been loaded from localStorage
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
-  
+
   // Column order state
   const [columnOrder, setColumnOrder] = useState<string[]>(() => {
     // Always start with default order to avoid hydration mismatch
     const alwaysVisible = ALL_COLUMNS.filter(col => col.alwaysVisible).map(col => col.key);
     const defaultVisible = ALL_COLUMNS.filter(col => col.defaultVisible && !col.alwaysVisible).map(col => col.key);
     const others = ALL_COLUMNS.filter(col => !col.defaultVisible && !col.alwaysVisible).map(col => col.key);
-    
+
     return [...alwaysVisible, ...defaultVisible, ...others];
   });
 
@@ -206,17 +206,17 @@ const ProductsPage: React.FC = () => {
       setPreferencesLoaded(true);
     }
   }, []);
-  
+
   // Discount rates state - store discount rates for each product
   const [discountRates, setDiscountRates] = useState<Record<string, number>>({});
   const [applyAllDiscountRate, setApplyAllDiscountRate] = useState<string>('');
-  
+
   // Selection state for product table
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  
+
   // Connect to store
-  const { 
-    segments, 
+  const {
+    segments,
     indexValues,
     competitors,
     products,
@@ -233,7 +233,7 @@ const ProductsPage: React.FC = () => {
     fetchCategories,
     fetchSubCategories,
     activeSalesChannel,
-    setActiveSalesChannel 
+    setActiveSalesChannel
   } = useAppStore();
 
   // Fetch data on component mount
@@ -319,24 +319,24 @@ const ProductsPage: React.FC = () => {
   // Apply discount rate to all currently visible products
   const handleApplyDiscountToAll = (discountRate: number) => {
     const newDiscountRates = { ...discountRates };
-    
+
     // Apply discount rate to all currently filtered/visible products
     filteredProductData.forEach(product => {
       newDiscountRates[product.key] = discountRate;
     });
-    
+
     setDiscountRates(newDiscountRates);
   };
 
   // Clear discount rates for all currently visible products
   const handleClearDiscountToAll = () => {
     const newDiscountRates = { ...discountRates };
-    
+
     // Clear discount rates for all currently filtered/visible products
     filteredProductData.forEach(product => {
       delete newDiscountRates[product.key];
     });
-    
+
     setDiscountRates(newDiscountRates);
   };
 
@@ -355,7 +355,7 @@ const ProductsPage: React.FC = () => {
     // Get integer and decimal parts
     const integerPart = Math.floor(price);
     const decimalPart = price - integerPart;
-    
+
     // Apply special rounding logic for Getir prices
     if (decimalPart === 0) {
       // Keep whole numbers as is
@@ -374,14 +374,14 @@ const ProductsPage: React.FC = () => {
   const calculateGetirPrice = (competitorPrice: number, indexValue: number): number => {
     // Index value represents percentage relative to competitor
     // 100 = same price, 105 = 5% higher, 95 = 5% lower
-    
+
     // If index is exactly 100, return competitor price without rounding
     if (indexValue === 100) {
       return competitorPrice;
     }
-    
+
     const basePrice = competitorPrice * (indexValue / 100);
-    
+
     // Apply special rounding logic
     return applyGetirRounding(basePrice);
   };
@@ -399,7 +399,7 @@ const ProductsPage: React.FC = () => {
     competitorId: string,
     salesChannel: string
   ): number | null => {
-    const indexValue = indexValues.find(iv => 
+    const indexValue = indexValues.find(iv =>
       iv.segmentId === segmentId &&
       iv.kviType === kviType &&
       iv.competitorId === competitorId &&
@@ -428,7 +428,7 @@ const ProductsPage: React.FC = () => {
     segments.forEach((segment, segmentIndex) => {
       // Filter price mappings to only include those that match this segment's price location
       // AND have corresponding products in the filtered products array
-      const segmentPriceMappings = competitorPrices.filter(priceMapping => 
+      const segmentPriceMappings = competitorPrices.filter(priceMapping =>
         priceMapping.location_id === segment.priceLocation &&
         filteredProductIds.has(priceMapping.sku_id)
       );
@@ -436,14 +436,14 @@ const ProductsPage: React.FC = () => {
       segmentPriceMappings.forEach(priceMapping => {
         const product = products.find(p => p.id === priceMapping.sku_id);
         const competitor = competitors.find(c => c.id === priceMapping.vendor_id);
-        
+
         const baseProduct = {
           id: priceMapping.sku_id,
           getirProductName: priceMapping.sku_name,
           competitorId: priceMapping.vendor_id,
-          kviLabel: product?.kvi_label === 'SKVI' ? 95 : 
-                    product?.kvi_label === 'KVI' ? 90 : 
-                    product?.kvi_label === 'Foreground' ? 70 : 30, // Convert string to number
+          kviLabel: product?.kvi_label === 'SKVI' ? 95 :
+            product?.kvi_label === 'KVI' ? 90 :
+              product?.kvi_label === 'Foreground' ? 70 : 30, // Convert string to number
           competitorPrice: priceMapping.price, // Use price from price mapping
           category: product?.category_name || 'Unknown',
           subCategory: product?.sub_category_name || 'Unknown',
@@ -467,13 +467,13 @@ const ProductsPage: React.FC = () => {
 
         const kviType = getKviTypeFromLabel(baseProduct.kviLabel);
         const ix = getIndexValue(segment.id, kviType, baseProduct.competitorId, activeChannel);
-        
+
         // Calculate Getir Unit Price using location-specific competitor price from API
         // Only calculate if IX value exists (not null for new segments)
-        const calculatedGetirPrice = ix !== null 
-          ? calculateGetirPrice(baseProduct.competitorPrice, ix) 
+        const calculatedGetirPrice = ix !== null
+          ? calculateGetirPrice(baseProduct.competitorPrice, ix)
           : null;
-        
+
         // Only include products that have index values (restore previous behavior)
         if (ix !== null) {
           expandedProductData.push({
@@ -518,41 +518,41 @@ const ProductsPage: React.FC = () => {
   // Filter product data
   const filteredProductData = useMemo(() => {
     let filtered = productData;
-    
+
     // Apply search filter
     if (searchText) {
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter(product =>
         product.getirProductName.toLowerCase().includes(searchText.toLowerCase())
       );
     }
-    
+
     // Category filtering is now handled by the API call
-    
+
     // Apply brand filter
     if (selectedBrandFilter && selectedBrandFilter !== 'all') {
       filtered = filtered.filter(product => product.brand === selectedBrandFilter);
     }
-    
+
     // Apply competitor filter
     if (selectedCompetitorFilter && selectedCompetitorFilter !== 'all') {
       filtered = filtered.filter(product => product.competitorId === selectedCompetitorFilter);
     }
-    
+
     // Apply segment filter
     if (selectedSegmentFilter && selectedSegmentFilter !== 'all') {
       filtered = filtered.filter(product => product.segmentId === selectedSegmentFilter);
     }
-    
+
     // Apply KVI label filter
     if (selectedKviLabelFilter && selectedKviLabelFilter !== 'all') {
       filtered = filtered.filter(product => product.kviType === selectedKviLabelFilter);
     }
-    
+
     // Apply discounted filter (switch - when true, show only discounted)
     if (selectedDiscountedFilter) {
       filtered = filtered.filter(product => product.isDiscounted === true);
     }
-    
+
     return filtered;
   }, [productData, searchText, selectedBrandFilter, selectedCompetitorFilter, selectedSegmentFilter, selectedKviLabelFilter, selectedDiscountedFilter]);
 
@@ -564,13 +564,13 @@ const ProductsPage: React.FC = () => {
   const handleExport = (format: 'csv' | 'xlsx') => {
     // If there are selected items, export only those
     if (selectedRowKeys.length > 0) {
-      const selectedData = filteredProductData.filter(product => 
+      const selectedData = filteredProductData.filter(product =>
         selectedRowKeys.includes(product.key)
       );
       exportProductMatches(selectedData, format, discountRates);
       return;
     }
-    
+
     // If no selections, ask user if they want to export all products or just filtered results
     if (filteredProductData.length !== productData.length) {
       // If there are filters applied, ask what to export
@@ -578,7 +578,7 @@ const ProductsPage: React.FC = () => {
         `Do you want to export all ${productData.length} products or just the ${filteredProductData.length} filtered results?\n\n` +
         `Click "OK" to export all products, or "Cancel" to export only filtered results.`
       );
-      
+
       if (exportAll) {
         exportProductMatches(productData, format, discountRates);
       } else {
@@ -593,14 +593,14 @@ const ProductsPage: React.FC = () => {
   const exportMenuItems = [
     {
       key: 'csv',
-      label: selectedRowKeys.length > 0 
+      label: selectedRowKeys.length > 0
         ? `Export ${selectedRowKeys.length} selected as CSV`
         : 'Export as CSV',
       onClick: () => handleExport('csv'),
     },
     {
-      key: 'xlsx', 
-      label: selectedRowKeys.length > 0 
+      key: 'xlsx',
+      label: selectedRowKeys.length > 0
         ? `Export ${selectedRowKeys.length} selected as Excel`
         : 'Export as Excel',
       onClick: () => handleExport('xlsx'),
@@ -614,7 +614,7 @@ const ProductsPage: React.FC = () => {
       label: 'Getir',
     },
     {
-      key: 'getirbuyuk', 
+      key: 'getirbuyuk',
       label: 'GetirBüyük',
     },
   ];
@@ -630,10 +630,10 @@ const ProductsPage: React.FC = () => {
   // Get level 2 categories based on selected level 1
   const level2Categories = useMemo(() => {
     if (selectedLevel1 === 'all') return [];
-    
+
     const selectedCategory = categories.find(cat => cat.id === selectedLevel1);
     if (!selectedCategory?.children) return [];
-    
+
     return selectedCategory.children.map(category => ({
       value: category.id,
       label: category.name
@@ -643,13 +643,13 @@ const ProductsPage: React.FC = () => {
   // Get level 3 categories based on selected level 1 and 2
   const level3Categories = useMemo(() => {
     if (selectedLevel1 === 'all' || selectedLevel2 === 'all') return [];
-    
+
     const selectedCategory = categories.find(cat => cat.id === selectedLevel1);
     if (!selectedCategory?.children) return [];
-    
+
     const selectedLevel2Category = selectedCategory.children.find(cat => cat.id === selectedLevel2);
     if (!selectedLevel2Category?.children) return [];
-    
+
     return selectedLevel2Category.children.map(category => ({
       value: category.id,
       label: category.name
@@ -659,16 +659,16 @@ const ProductsPage: React.FC = () => {
   // Get level 4 categories based on selected level 1, 2, and 3
   const level4Categories = useMemo(() => {
     if (selectedLevel1 === 'all' || selectedLevel2 === 'all' || selectedLevel3 === 'all') return [];
-    
+
     const selectedCategory = categories.find(cat => cat.id === selectedLevel1);
     if (!selectedCategory?.children) return [];
-    
+
     const selectedLevel2Category = selectedCategory.children.find(cat => cat.id === selectedLevel2);
     if (!selectedLevel2Category?.children) return [];
-    
+
     const selectedLevel3Category = selectedLevel2Category.children.find(cat => cat.id === selectedLevel3);
     if (!selectedLevel3Category?.children) return [];
-    
+
     return selectedLevel3Category.children.map(category => ({
       value: category.id,
       label: category.name
@@ -701,14 +701,14 @@ const ProductsPage: React.FC = () => {
       } else {
         newSet.delete(columnKey);
       }
-      
+
       // Save to localStorage
       try {
         localStorage.setItem('product-list-visible-columns', JSON.stringify(Array.from(newSet)));
       } catch (error) {
         console.warn('Failed to save column preferences to localStorage:', error);
       }
-      
+
       return newSet;
     });
   };
@@ -718,7 +718,7 @@ const ProductsPage: React.FC = () => {
       ALL_COLUMNS.filter(col => col.defaultVisible || col.alwaysVisible).map(col => col.key)
     );
     setVisibleColumns(defaultVisible);
-    
+
     // Save to localStorage
     try {
       localStorage.setItem('product-list-visible-columns', JSON.stringify(Array.from(defaultVisible)));
@@ -730,7 +730,7 @@ const ProductsPage: React.FC = () => {
   const selectAllColumns = () => {
     const allColumnKeys = new Set(ALL_COLUMNS.map(col => col.key));
     setVisibleColumns(allColumnKeys);
-    
+
     // Save to localStorage
     try {
       localStorage.setItem('product-list-visible-columns', JSON.stringify(Array.from(allColumnKeys)));
@@ -745,7 +745,7 @@ const ProductsPage: React.FC = () => {
       ALL_COLUMNS.filter(col => col.alwaysVisible).map(col => col.key)
     );
     setVisibleColumns(alwaysVisibleColumns);
-    
+
     // Save to localStorage
     try {
       localStorage.setItem('product-list-visible-columns', JSON.stringify(Array.from(alwaysVisibleColumns)));
@@ -761,7 +761,7 @@ const ProductsPage: React.FC = () => {
     // Prevent moving always-visible columns
     const activeColumn = ALL_COLUMNS.find(col => col.key === active.id);
     const overColumn = ALL_COLUMNS.find(col => col.key === over.id);
-    
+
     if (activeColumn?.alwaysVisible || overColumn?.alwaysVisible) {
       return; // Don't allow moving always-visible columns
     }
@@ -771,14 +771,14 @@ const ProductsPage: React.FC = () => {
         const oldIndex = items.indexOf(active.id);
         const newIndex = items.indexOf(over.id);
         const newOrder = arrayMove(items, oldIndex, newIndex);
-        
+
         // Save to localStorage
         try {
           localStorage.setItem('product-list-column-order', JSON.stringify(newOrder));
         } catch (error) {
           console.warn('Failed to save column order to localStorage:', error);
         }
-        
+
         return newOrder;
       });
     }
@@ -788,10 +788,10 @@ const ProductsPage: React.FC = () => {
     const alwaysVisible = ALL_COLUMNS.filter(col => col.alwaysVisible).map(col => col.key);
     const defaultVisible = ALL_COLUMNS.filter(col => col.defaultVisible && !col.alwaysVisible).map(col => col.key);
     const others = ALL_COLUMNS.filter(col => !col.defaultVisible && !col.alwaysVisible).map(col => col.key);
-    
+
     const defaultOrder = [...alwaysVisible, ...defaultVisible, ...others];
     setColumnOrder(defaultOrder);
-    
+
     // Save to localStorage
     try {
       localStorage.setItem('product-list-column-order', JSON.stringify(defaultOrder));
@@ -804,7 +804,7 @@ const ProductsPage: React.FC = () => {
   const SortableColumn = ({ columnKey, children }: { columnKey: string; children: React.ReactNode }) => {
     const column = ALL_COLUMNS.find(col => col.key === columnKey);
     const isAlwaysVisible = column?.alwaysVisible;
-    
+
     const {
       attributes,
       listeners,
@@ -812,7 +812,7 @@ const ProductsPage: React.FC = () => {
       transform,
       transition,
       isDragging,
-    } = useSortable({ 
+    } = useSortable({
       id: columnKey,
       disabled: isAlwaysVisible // Disable dragging for always-visible columns
     });
@@ -825,11 +825,11 @@ const ProductsPage: React.FC = () => {
 
     return (
       <div ref={setNodeRef} style={style} {...(isAlwaysVisible ? {} : attributes)} {...(isAlwaysVisible ? {} : listeners)}>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '4px', 
-          cursor: isAlwaysVisible ? 'default' : 'grab' 
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          cursor: isAlwaysVisible ? 'default' : 'grab'
         }}>
           {!isAlwaysVisible && <MenuOutlined style={{ fontSize: '12px', color: '#999' }} />}
           {children}
@@ -993,7 +993,7 @@ const ProductsPage: React.FC = () => {
       render: (kviType: string) => {
         const colorMap = {
           'SKVI': 'red',
-          'KVI': 'orange', 
+          'KVI': 'orange',
           'Foreground': 'blue',
           'Background': 'default'
         };
@@ -1145,10 +1145,18 @@ const ProductsPage: React.FC = () => {
             );
           }
         }
+
+        const discountRate = discountRates[record.key] || 0;
+        const hasDiscount = discountRate > 0;
+
         return (
-          <div style={{ color: '#1890ff', fontWeight: 'bold' }}>
+          <div style={{
+            color: '#1890ff',
+            fontWeight: 'bold',
+            textDecoration: hasDiscount ? 'line-through' : 'none'
+          }}>
             ₺{price.toFixed(2)}
-            <div style={{ fontSize: '10px', color: '#666', fontWeight: 'normal' }}>
+            <div style={{ fontSize: '10px', color: '#666', fontWeight: 'normal', textDecoration: 'none' }}>
               (Calculated)
             </div>
           </div>
@@ -1164,7 +1172,7 @@ const ProductsPage: React.FC = () => {
       render: (value: any, record: any) => {
         const getirPrice = record.getirUnitPrice;
         const buyingPrice = record.buyingPrice;
-        
+
         if (getirPrice === null || getirPrice === undefined) {
           return (
             <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
@@ -1172,7 +1180,7 @@ const ProductsPage: React.FC = () => {
             </div>
           );
         }
-        
+
         if (buyingPrice === null || buyingPrice === undefined) {
           return (
             <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
@@ -1180,11 +1188,11 @@ const ProductsPage: React.FC = () => {
             </div>
           );
         }
-        
+
         const profit = getirPrice - buyingPrice;
         const profitMargin = (profit / buyingPrice * 100).toFixed(1);
         const isPositive = profit >= 0;
-        
+
         return (
           <div>
             <div style={{ color: isPositive ? '#52c41a' : '#ff4d4f', fontWeight: 'bold' }}>
@@ -1214,10 +1222,10 @@ const ProductsPage: React.FC = () => {
             </div>
           );
         }
-        
+
         const struckPrice = record.struckPrice;
         const hasStruckPrice = struckPrice !== null && struckPrice !== undefined;
-        
+
         return (
           <div style={{ color: hasStruckPrice ? '#ff4d4f' : '#666', textDecoration: hasStruckPrice ? 'line-through' : 'none' }}>
             ₺{price.toFixed(2)}
@@ -1256,10 +1264,10 @@ const ProductsPage: React.FC = () => {
             </div>
           );
         }
-        
+
         const currentPrice = record.competitorPrice;
         const percentageDiff = currentPrice ? ((currentPrice - struckPrice) / currentPrice * 100).toFixed(1) : '0.0';
-        
+
         return (
           <div>
             <div style={{ color: '#52c41a', fontWeight: 'bold' }}>
@@ -1286,8 +1294,8 @@ const ProductsPage: React.FC = () => {
           <Input
             value={discountRates[record.key] || ''}
             placeholder="0"
-            style={{ 
-              textAlign: 'center', 
+            style={{
+              textAlign: 'center',
               width: '70px',
               padding: '4px 8px',
               boxSizing: 'border-box'
@@ -1329,7 +1337,7 @@ const ProductsPage: React.FC = () => {
       render: (value: any, record: any) => {
         const getirPrice = record.getirUnitPrice;
         const discountRate = discountRates[record.key] || 0;
-        
+
         if (getirPrice === null || getirPrice === undefined) {
           return (
             <div style={{ color: '#999', fontStyle: 'italic', fontSize: '11px', textAlign: 'center' }}>
@@ -1337,7 +1345,7 @@ const ProductsPage: React.FC = () => {
             </div>
           );
         }
-        
+
         // Only calculate and show discounted price if there's an actual discount
         if (discountRate === 0) {
           return (
@@ -1346,10 +1354,10 @@ const ProductsPage: React.FC = () => {
             </div>
           );
         }
-        
+
         const rawStruckPrice = getirPrice * (1 - discountRate / 100);
         const struckPrice = applyGetirRounding(rawStruckPrice);
-        
+
         return (
           <div style={{ color: '#52c41a', fontWeight: 'bold' }}>
             ₺{struckPrice.toFixed(2)}
@@ -1367,10 +1375,10 @@ const ProductsPage: React.FC = () => {
   // Filter and sort columns based on visibility and order
   const visibleProductColumns = useMemo(() => {
     // First filter visible columns
-    const filteredColumns = productColumns.filter(column => 
+    const filteredColumns = productColumns.filter(column =>
       visibleColumns.has(column.key) || ALL_COLUMNS.find(col => col.key === column.key)?.alwaysVisible
     );
-    
+
     // Then sort by column order
     return filteredColumns.sort((a, b) => {
       const aIndex = columnOrder.indexOf(a.key);
@@ -1392,8 +1400,8 @@ const ProductsPage: React.FC = () => {
       </Row>
 
       {/* Sales Channel Tabs */}
-      <Tabs 
-        activeKey={activeChannel} 
+      <Tabs
+        activeKey={activeChannel}
         onChange={handleChannelChange}
         items={salesChannelItems}
         style={{ marginBottom: '16px' }}
@@ -1410,12 +1418,12 @@ const ProductsPage: React.FC = () => {
           </Col>
           <Col>
             <Space>
-              <Dropdown 
-                menu={{ items: columnSelectorItems }} 
+              <Dropdown
+                menu={{ items: columnSelectorItems }}
                 trigger={['click']}
                 placement="bottomRight"
               >
-                <Button 
+                <Button
                   icon={<SettingOutlined />}
                   title="Customize columns"
                   type={visibleColumns.size === 0 ? 'primary' : 'default'}
@@ -1424,17 +1432,17 @@ const ProductsPage: React.FC = () => {
                   Columns ({preferencesLoaded ? visibleColumns.size : ALL_COLUMNS.filter(col => col.defaultVisible).length}/{ALL_COLUMNS.length})
                 </Button>
               </Dropdown>
-              <Dropdown 
-                menu={{ items: exportMenuItems }} 
+              <Dropdown
+                menu={{ items: exportMenuItems }}
                 trigger={['click']}
               >
-                <Button 
-                  type="primary" 
+                <Button
+                  type="primary"
                   icon={<ExportOutlined />}
                   style={{ background: '#7C3AED' }}
                 >
-                  {selectedRowKeys.length > 0 
-                    ? `Export ${selectedRowKeys.length} selected` 
+                  {selectedRowKeys.length > 0
+                    ? `Export ${selectedRowKeys.length} selected`
                     : 'Export'
                   } <DownOutlined />
                 </Button>
@@ -1473,8 +1481,8 @@ const ProductsPage: React.FC = () => {
         {/* Filters */}
         <Row gutter={[8, 8]} style={{ marginBottom: '16px' }}>
           <Col xs={24} sm={12} md={6} lg={4}>
-            <Input 
-              placeholder="Search products..." 
+            <Input
+              placeholder="Search products..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               allowClear
@@ -1482,8 +1490,8 @@ const ProductsPage: React.FC = () => {
             />
           </Col>
           <Col xs={12} sm={6} md={4} lg={2}>
-            <Select 
-              placeholder="Level 1" 
+            <Select
+              placeholder="Level 1"
               style={{ width: '100%' }}
               value={selectedLevel1}
               onChange={handleLevel1Change}
@@ -1502,8 +1510,8 @@ const ProductsPage: React.FC = () => {
             </Select>
           </Col>
           <Col xs={12} sm={6} md={4} lg={2}>
-            <Select 
-              placeholder="Level 2" 
+            <Select
+              placeholder="Level 2"
               style={{ width: '100%' }}
               value={selectedLevel2}
               onChange={handleLevel2Change}
@@ -1523,8 +1531,8 @@ const ProductsPage: React.FC = () => {
             </Select>
           </Col>
           <Col xs={12} sm={6} md={4} lg={2}>
-            <Select 
-              placeholder="Level 3" 
+            <Select
+              placeholder="Level 3"
               style={{ width: '100%' }}
               value={selectedLevel3}
               onChange={handleLevel3Change}
@@ -1544,8 +1552,8 @@ const ProductsPage: React.FC = () => {
             </Select>
           </Col>
           <Col xs={12} sm={6} md={4} lg={2}>
-            <Select 
-              placeholder="Level 4" 
+            <Select
+              placeholder="Level 4"
               style={{ width: '100%' }}
               value={selectedLevel4}
               onChange={handleLevel4Change}
@@ -1565,8 +1573,8 @@ const ProductsPage: React.FC = () => {
             </Select>
           </Col>
           <Col xs={12} sm={6} md={4} lg={2}>
-            <Select 
-              placeholder="Brand" 
+            <Select
+              placeholder="Brand"
               style={{ width: '100%' }}
               value={selectedBrandFilter}
               onChange={setSelectedBrandFilter}
@@ -1585,8 +1593,8 @@ const ProductsPage: React.FC = () => {
             </Select>
           </Col>
           <Col xs={12} sm={6} md={4} lg={2}>
-            <Select 
-              placeholder="Competitor" 
+            <Select
+              placeholder="Competitor"
               style={{ width: '100%' }}
               value={selectedCompetitorFilter}
               onChange={setSelectedCompetitorFilter}
@@ -1605,8 +1613,8 @@ const ProductsPage: React.FC = () => {
             </Select>
           </Col>
           <Col xs={12} sm={6} md={4} lg={2}>
-            <Select 
-              placeholder="Segment" 
+            <Select
+              placeholder="Segment"
               style={{ width: '100%' }}
               value={selectedSegmentFilter}
               onChange={setSelectedSegmentFilter}
@@ -1625,8 +1633,8 @@ const ProductsPage: React.FC = () => {
             </Select>
           </Col>
           <Col xs={12} sm={6} md={4} lg={2}>
-            <Select 
-              placeholder="KVI Label" 
+            <Select
+              placeholder="KVI Label"
               style={{ width: '100%' }}
               value={selectedKviLabelFilter}
               onChange={setSelectedKviLabelFilter}
@@ -1645,7 +1653,7 @@ const ProductsPage: React.FC = () => {
           </Col>
           <Col xs={12} sm={6} md={4} lg={2}>
             <div style={{ display: 'flex', alignItems: 'center', height: '40px' }}>
-              <Switch 
+              <Switch
                 checked={selectedDiscountedFilter}
                 onChange={setSelectedDiscountedFilter}
               />
@@ -1656,10 +1664,10 @@ const ProductsPage: React.FC = () => {
 
         {/* Product Table */}
         {(preferencesLoaded ? visibleColumns.size : ALL_COLUMNS.filter(col => col.defaultVisible).length) === 0 ? (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '40px', 
-            backgroundColor: '#f5f5f5', 
+          <div style={{
+            textAlign: 'center',
+            padding: '40px',
+            backgroundColor: '#f5f5f5',
             borderRadius: '6px',
             border: '1px dashed #d9d9d9'
           }}>
@@ -1667,8 +1675,8 @@ const ProductsPage: React.FC = () => {
               No columns selected. Please select at least one column to view the product list.
             </Text>
             <br />
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               onClick={resetToDefaultColumns}
               style={{ marginTop: '16px' }}
             >
